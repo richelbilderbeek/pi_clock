@@ -9,8 +9,11 @@
 //       6 | CLK
 //       7 | DAT
 //       8 | RST
+//       9 | Piezo
+//      10 | Neopixel 12 ring
 //
-// Also, put a beeper between Arduino pins 10 and GND
+// - put a beeper between Arduino pins 10 and GND
+// - put a 1000uF capacitor between GND and 5V
 //
 // This code is adapted from:
 
@@ -108,6 +111,19 @@
 // in this code.
 //
 
+#include <Adafruit_NeoPixel.h>
+
+// Which pin on the Arduino is connected to the NeoPixels?
+const int pin_leds = 10;
+
+// Which pin on the Arduino is connected to the piezo?
+const int pin_piezo = 9;
+
+// How many NeoPixels are attached to the Arduino?
+const int n_pixels = 12;
+
+const unsigned long factor  = (1 * 60 * (unsigned long)1000) / n_pixels;
+const unsigned long factor2 = (1 * 60 * (unsigned long)1000) / 255;
 
 // Set your own pins with these defines !
 #define DS1302_SCLK_PIN   6    // Arduino pin for the Serial Clock
@@ -238,6 +254,11 @@ typedef struct ds1302_struct
 };
 
 
+// When we setup the NeoPixel library, we tell it how many pixels, and which pin to use to send signals.
+// Note that for older NeoPixel strips you might need to change the third parameter--see the strandtest
+// example for more information on possible values.
+Adafruit_NeoPixel pixels = Adafruit_NeoPixel(n_pixels, pin_leds, NEO_GRB + NEO_KHZ800);
+
 void setup()
 {      
   ds1302_struct rtc;
@@ -260,58 +281,62 @@ void setup()
   // Disable Trickle Charger.
   DS1302_write (DS1302_TRICKLE, 0x00);
 
-// Remove the next define,
-// after the right date and time are set.
-#define SET_DATE_TIME_JUST_ONCE
-#ifdef SET_DATE_TIME_JUST_ONCE  
+  // Remove the next define,
+  // after the right date and time are set.
+  //#define SET_DATE_TIME_JUST_ONCE
+  #ifdef SET_DATE_TIME_JUST_ONCE  
+  {
+    // Fill these variables with the date and time.
+    int seconds, minutes, hours, dayofweek, dayofmonth, month, year;
 
-  // Fill these variables with the date and time.
-  int seconds, minutes, hours, dayofweek, dayofmonth, month, year;
+    // Example for april 15, 2013, 10:08, monday is 2nd day of Week.
+    // Set your own time and date in these variables.
+    seconds    = 0;
+    minutes    = 52;
+    hours      = 7;
+    dayofweek  = 6;  // Day of week, any day can be first, counts 1...7
+    dayofmonth = 24; // Day of month, 1...31
+    month      = 1;  // month 1...12
+    year       = 2015;
 
-  // Example for april 15, 2013, 10:08, monday is 2nd day of Week.
-  // Set your own time and date in these variables.
-  seconds    = 0;
-  minutes    = 8;
-  hours      = 10;
-  dayofweek  = 2;  // Day of week, any day can be first, counts 1...7
-  dayofmonth = 15; // Day of month, 1...31
-  month      = 4;  // month 1...12
-  year       = 2013;
+    // Set a time and date
+    // This also clears the CH (Clock Halt) bit,
+    // to start the clock.
 
-  // Set a time and date
-  // This also clears the CH (Clock Halt) bit,
-  // to start the clock.
+    // Fill the structure with zeros to make
+    // any unused bits zero
+    memset ((char *) &rtc, 0, sizeof(rtc));
 
-  // Fill the structure with zeros to make
-  // any unused bits zero
-  memset ((char *) &rtc, 0, sizeof(rtc));
+    rtc.Seconds    = bin2bcd_l( seconds);
+    rtc.Seconds10  = bin2bcd_h( seconds);
+    rtc.CH         = 0;      // 1 for Clock Halt, 0 to run;
+    rtc.Minutes    = bin2bcd_l( minutes);
+    rtc.Minutes10  = bin2bcd_h( minutes);
+    // To use the 12 hour format,
+    // use it like these four lines:
+    //    rtc.h12.Hour   = bin2bcd_l( hours);
+    //    rtc.h12.Hour10 = bin2bcd_h( hours);
+    //    rtc.h12.AM_PM  = 0;     // AM = 0
+    //    rtc.h12.hour_12_24 = 1; // 1 for 24 hour format
+    rtc.h24.Hour   = bin2bcd_l( hours);
+    rtc.h24.Hour10 = bin2bcd_h( hours);
+    rtc.h24.hour_12_24 = 0; // 0 for 24 hour format
+    rtc.Date       = bin2bcd_l( dayofmonth);
+    rtc.Date10     = bin2bcd_h( dayofmonth);
+    rtc.Month      = bin2bcd_l( month);
+    rtc.Month10    = bin2bcd_h( month);
+    rtc.Day        = dayofweek;
+    rtc.Year       = bin2bcd_l( year - 2000);
+    rtc.Year10     = bin2bcd_h( year - 2000);
+    rtc.WP = 0;  
 
-  rtc.Seconds    = bin2bcd_l( seconds);
-  rtc.Seconds10  = bin2bcd_h( seconds);
-  rtc.CH         = 0;      // 1 for Clock Halt, 0 to run;
-  rtc.Minutes    = bin2bcd_l( minutes);
-  rtc.Minutes10  = bin2bcd_h( minutes);
-  // To use the 12 hour format,
-  // use it like these four lines:
-  //    rtc.h12.Hour   = bin2bcd_l( hours);
-  //    rtc.h12.Hour10 = bin2bcd_h( hours);
-  //    rtc.h12.AM_PM  = 0;     // AM = 0
-  //    rtc.h12.hour_12_24 = 1; // 1 for 24 hour format
-  rtc.h24.Hour   = bin2bcd_l( hours);
-  rtc.h24.Hour10 = bin2bcd_h( hours);
-  rtc.h24.hour_12_24 = 0; // 0 for 24 hour format
-  rtc.Date       = bin2bcd_l( dayofmonth);
-  rtc.Date10     = bin2bcd_h( dayofmonth);
-  rtc.Month      = bin2bcd_l( month);
-  rtc.Month10    = bin2bcd_h( month);
-  rtc.Day        = dayofweek;
-  rtc.Year       = bin2bcd_l( year - 2000);
-  rtc.Year10     = bin2bcd_h( year - 2000);
-  rtc.WP = 0;  
+    // Write all clock data at once (burst mode).
+    DS1302_clock_burst_write( (uint8_t *) &rtc); 
+  }
+  #endif
 
-  // Write all clock data at once (burst mode).
-  DS1302_clock_burst_write( (uint8_t *) &rtc);
-#endif
+  pixels.begin();
+  pinMode(pin_piezo,OUTPUT);
 }
 
 //Delta's between time given by Serial and timer board
@@ -369,7 +394,13 @@ void loop()
     tone(10,3142,3142);
     delay(30 * 1000); //Skip the next thirty seconds
   }
-  delay(30 * 1000); //Check every thirty seconds
+
+  const int ledpower = millis() / factor2;
+  const int n_lampjes = (millis() / factor) % 12;
+  pixels.setPixelColor(n_lampjes, pixels.Color(ledpower , 255 - ledpower, 0));
+  pixels.show(); 
+  delay(100);
+  //delay(30 * 1000); //Check every thirty seconds
 }
 
 
