@@ -339,10 +339,6 @@ void setup()
   pinMode(pin_piezo,OUTPUT);
 }
 
-//Delta's between time given by Serial and timer board
-int delta_h = 0; 
-int delta_m = 0; 
-
 void loop()
 {
   ds1302_struct rtc;
@@ -351,39 +347,14 @@ void loop()
   // Read all clock data at once (burst mode).
   DS1302_clock_burst_read( (uint8_t *) &rtc);
 
-  if (Serial.available())
-  {
-    const int h = Serial.parseInt();
-    const char c1 = Serial.available() ? Serial.read() : ',';
-    const int m = Serial.available() ? Serial.parseInt() : 0;
-    const int h_board = (rtc.h24.Hour10 * 10) + rtc.h24.Hour;
-    const int m_board = (rtc.Minutes10 * 10) + rtc.Minutes;
-    delta_h = h_board - h;
-    delta_m = m_board - m;
-    Serial.println("Set current time:");
-    Serial.print(h);
-    Serial.print(c1);
-    Serial.println(m);
-    Serial.println("Board time:");
-    Serial.print(h_board);
-    Serial.print(c1);
-    Serial.println(m_board);
-    Serial.println("Calculated deltas:");
-    Serial.print(delta_h);
-    Serial.print(c1);
-    Serial.println(delta_m);
-  }
-
   //sprintf( buffer, "%02d:%02d:%02d\n", \
   //  bcd2bin( rtc.h24.Hour10, rtc.h24.Hour), \
   //  bcd2bin( rtc.Minutes10, rtc.Minutes), \
   //  bcd2bin( rtc.Seconds10, rtc.Seconds));
   //Serial.print(buffer);
 
-  const int h_board = (rtc.h24.Hour10 * 10) + rtc.h24.Hour;
-  const int m_board = (rtc.Minutes10 * 10) + rtc.Minutes;
-  const int h = (h_board - delta_h + 24) % 24;
-  const int m = (m_board - delta_m + 60) % 60;
+  const int h = (rtc.h24.Hour10 * 10) + rtc.h24.Hour;
+  const int m = (rtc.Minutes10 * 10) + rtc.Minutes;
   Serial.print(h);
   Serial.print(':');
   Serial.println(m);
