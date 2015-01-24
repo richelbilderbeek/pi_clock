@@ -15,6 +15,13 @@
 // - put a beeper between Arduino pins 10 and GND
 // - put a 1000uF capacitor between GND and 5V
 //
+
+// #  0  1  2  3  4  5  6  7  8  9  A  B
+// s  1  2  4  8 16 32
+// m              1  2  4  8 16 32
+// h 16                       1  2  4  8
+//
+//
 // This code is adapted from:
 
 //
@@ -291,9 +298,9 @@ void setup()
 
     // Example for april 15, 2013, 10:08, monday is 2nd day of Week.
     // Set your own time and date in these variables.
-    seconds    = 0;
-    minutes    = 52;
-    hours      = 7;
+    seconds    = 15;
+    minutes    = 12;
+    hours      = 8;
     dayofweek  = 6;  // Day of week, any day can be first, counts 1...7
     dayofmonth = 24; // Day of month, 1...31
     month      = 1;  // month 1...12
@@ -347,17 +354,66 @@ void loop()
   // Read all clock data at once (burst mode).
   DS1302_clock_burst_read( (uint8_t *) &rtc);
 
-  //sprintf( buffer, "%02d:%02d:%02d\n", \
-  //  bcd2bin( rtc.h24.Hour10, rtc.h24.Hour), \
-  //  bcd2bin( rtc.Minutes10, rtc.Minutes), \
-  //  bcd2bin( rtc.Seconds10, rtc.Seconds));
-  //Serial.print(buffer);
-
   const int h = (rtc.h24.Hour10 * 10) + rtc.h24.Hour;
-  const int m = (rtc.Minutes10 * 10) + rtc.Minutes;
+  const int m = (rtc.Minutes10  * 10) + rtc.Minutes;
+  const int s = (rtc.Seconds10  * 10) + rtc.Seconds;
   Serial.print(h);
   Serial.print(':');
-  Serial.println(m);
+  Serial.print(m);
+  Serial.print(':');
+  Serial.println(s);
+
+  int reds[n_pixels];
+  int greens[n_pixels];
+  int blues[n_pixels];
+  //Clear arrays
+  for (int i=0; i!=n_pixels; ++i) 
+  {
+    reds[i] = 0;    
+    greens[i] = 0;    
+    blues[i] = 0;    
+  }
+  //The LED indices the seconds, minutes and hours start
+  const int first_second = 0;
+  const int first_minute = 4;
+  const int first_hour = 8;
+  const int led_brightness_on  = 32;
+  const int led_brightness_off = 0;
+  //Set seconds
+  for (int i=0; i!=6; ++i)
+  {
+    const int divisor = 1 << i;
+    const int red     = s & divisor ? led_brightness_on : led_brightness_off; 
+    reds[(i + first_second) % n_pixels] = red;
+  }
+  //Set minutes
+  for (int i=0; i!=6; ++i)
+  {
+    const int divisor = 1 << i;
+    const int green   = m & divisor ? led_brightness_on : led_brightness_off; 
+    greens[(i + first_minute) % n_pixels] = green;
+  }
+  //Set hours
+  for (int i=0; i!=6; ++i)
+  {
+    const int divisor = 1 << i;
+    const int blue    = h & divisor ? led_brightness_on : led_brightness_off; 
+    blues[(i + first_hour) % n_pixels] = blue;
+  }
+  //Blink initial positions
+  if (s % 5 == 0)
+  {
+    greens[first_minute] = greens[first_minute] == led_brightness_on ? led_brightness_off : led_brightness_on;    
+    blues [first_hour  ] = blues [first_hour  ] == led_brightness_on ? led_brightness_off : led_brightness_on;    
+  }
+  //Set pixels
+  for (int i=0; i!=n_pixels; ++i) 
+  {
+    pixels.setPixelColor(i,pixels.Color(reds[i],greens[i],blues[i]));
+  }
+  pixels.show(); 
+
+  delay(500);
 
   if (h == 15 && m == 14)
   {
@@ -365,13 +421,6 @@ void loop()
     tone(10,3142,3142);
     delay(30 * 1000); //Skip the next thirty seconds
   }
-
-  const int ledpower = millis() / factor2;
-  const int n_lampjes = (millis() / factor) % 12;
-  pixels.setPixelColor(n_lampjes, pixels.Color(ledpower , 255 - ledpower, 0));
-  pixels.show(); 
-  delay(100);
-  //delay(30 * 1000); //Check every thirty seconds
 }
 
 
