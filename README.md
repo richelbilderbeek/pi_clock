@@ -3,10 +3,10 @@
 Arduino project for a clock that displays the time in binary beeps at pi o'clock PM
 
 
-![Pi Clock 1](PiClock1.jpg)
-![Pi Clock 2](PiClock2.jpg)
-![Pi Clock 3](PiClock3.jpg)
-![Pi Clock 4](PiClock4.jpg)
+![Pi Clock 1](PiClockFront1.jpg)
+![Pi Clock 2](PiClockFront2.jpg)
+![Pi Clock 3](PiClockFront3.jpg)
+![Pi Clock 4](PiClockFront4.jpg)
 
 ## How to read the time
 
