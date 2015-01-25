@@ -120,32 +120,25 @@
 
 #include <Adafruit_NeoPixel.h>
 
-// Which pin on the Arduino is connected to the NeoPixels?
-const int pin_leds = 10;
-
+// Arduino pin connected to CLK on the DS1302. CLK is the Serial Clock
+const int pinDS1302_clock = 6; 
+// Arduino pin connected to DAT on the DS1302. DAT is the Data I/O
+const int pinDS1302_data  = 7;
+// Arduino pin connected to RST on the DS1302. RST is the Chip Enable
+const int pinDS1302_reset = 8;
 // Which pin on the Arduino is connected to the piezo?
 const int pin_piezo = 9;
+// Which pin on the Arduino is connected to the NeoPixels?
+const int pin_leds = 10;
 
 // How many NeoPixels are attached to the Arduino?
 const int n_pixels = 12;
 
-const unsigned long factor  = (1 * 60 * (unsigned long)1000) / n_pixels;
-const unsigned long factor2 = (1 * 60 * (unsigned long)1000) / 255;
+//Flag the check if it has become 3:14 PM already
+bool is_pi_oclock = false;
 
-// Set your own pins with these defines !
-#define DS1302_SCLK_PIN   6    // Arduino pin for the Serial Clock
-#define DS1302_IO_PIN     7    // Arduino pin for the Data I/O
-#define DS1302_CE_PIN     8    // Arduino pin for the Chip Enable
-
-
-// Macros to convert the bcd values of the registers to normal
-// integer variables.
-// The code uses seperate variables for the high byte and the low byte
-// of the bcd, so these macros handle both bytes seperately.
-#define bcd2bin(h,l)    (((h)*10) + (l))
-#define bin2bcd_h(x)   ((x)/10)
-#define bin2bcd_l(x)    ((x)%10)
-
+//Use the Serial Monitor for showing the time multiple times per second
+const bool use_serial_monitor = false;
 
 // Register names.
 // Since the highest bit is always '1',
@@ -220,7 +213,7 @@ const unsigned long factor2 = (1 * 60 * (unsigned long)1000) / 255;
 // the 'clock burst' command.
 // Note that this structure contains an anonymous union.
 // It might cause a problem on other compilers.
-typedef struct ds1302_struct
+struct Ds1302
 {
   uint8_t Seconds:4;      // low decimal digit 0-9
   uint8_t Seconds10:3;    // high decimal digit 0-5
@@ -268,16 +261,12 @@ Adafruit_NeoPixel pixels = Adafruit_NeoPixel(n_pixels, pin_leds, NEO_GRB + NEO_K
 
 void setup()
 {      
-  ds1302_struct rtc;
-
-
   Serial.begin(9600);
-  Serial.println(F("Pi Clock (C) 2015 Richel Bilderbeek"));
-  Serial.println(F(" "));
-  Serial.println(F("using:"));
-  Serial.println(F("DS1302 Real Time Clock"));
-  Serial.println(F("Version 2, March 2013"));
+  Serial.println("Pi Clock (C) 2015 Richel Bilderbeek");
+  Serial.println(" ");
+  Serial.println("using the DS1302 Real Time Clock (Version 2, March 2013)");
 
+  Ds1302 rtc;
 
   // Start by clearing the Write Protect bit
   // Otherwise the clock data cannot be written
@@ -348,21 +337,17 @@ void setup()
 
 void loop()
 {
-  ds1302_struct rtc;
-  char buffer[80];     // the code uses 70 characters.
-
+  Ds1302 rtc;
   // Read all clock data at once (burst mode).
   DS1302_clock_burst_read( (uint8_t *) &rtc);
 
   const int h = (rtc.h24.Hour10 * 10) + rtc.h24.Hour;
   const int m = (rtc.Minutes10  * 10) + rtc.Minutes;
   const int s = (rtc.Seconds10  * 10) + rtc.Seconds;
-  Serial.print(h);
-  Serial.print(':');
-  Serial.print(m);
-  Serial.print(':');
-  Serial.println(s);
-
+  if (use_serial_monitor) 
+  {  
+    Serial.print(h); Serial.print(':'); Serial.print(m); Serial.print(':'); Serial.println(s);
+  }
   int reds[n_pixels];
   int greens[n_pixels];
   int blues[n_pixels];
@@ -413,14 +398,25 @@ void loop()
   }
   pixels.show(); 
 
-  delay(500);
-
-  if (h == 15 && m == 14)
+  //Detect pi o'clock
+  if (h == 10 && m == 49) 
   {
-    Serial.print("PI O'CLOCK");
-    tone(10,3142,3142);
-    delay(30 * 1000); //Skip the next thirty seconds
+    //Already beeped?
+    if (!is_pi_oclock)
+    {
+      is_pi_oclock = true;
+      Serial.print("PI O'CLOCK");
+      const int frequency_hz = 3142;
+      const int duration_msec = 3142;
+      tone(pin_piezo,frequency_hz,duration_msec);
+    }
   }
+  else 
+  { 
+    is_pi_oclock = false; 
+  }
+
+  delay(500);
 }
 
 
@@ -435,20 +431,18 @@ void loop()
 //
 void DS1302_clock_burst_read( uint8_t *p)
 {
-  int i;
-
-  _DS1302_start();
+  DS1302_start();
 
   // Instead of the address,
   // the CLOCK_BURST_READ command is issued
   // the I/O-line is released for the data
-  _DS1302_togglewrite( DS1302_CLOCK_BURST_READ, true);  
+  DS1302_togglewrite( DS1302_CLOCK_BURST_READ, true);  
 
-  for( i=0; i<8; i++)
+  for(int i=0; i!=8; ++i)
   {
-    *p++ = _DS1302_toggleread();
+    *p++ = DS1302_toggleread();
   }
-  _DS1302_stop();
+  DS1302_stop();
 }
 
 
@@ -463,21 +457,19 @@ void DS1302_clock_burst_read( uint8_t *p)
 //
 void DS1302_clock_burst_write( uint8_t *p)
 {
-  int i;
-
-  _DS1302_start();
+  DS1302_start();
 
   // Instead of the address,
   // the CLOCK_BURST_WRITE command is issued.
   // the I/O-line is not released
-  _DS1302_togglewrite( DS1302_CLOCK_BURST_WRITE, false);  
+  DS1302_togglewrite( DS1302_CLOCK_BURST_WRITE, false);  
 
-  for( i=0; i<8; i++)
+  for(int i=0; i!=8; ++i)
   {
     // the I/O-line is not released
-    _DS1302_togglewrite( *p++, false);  
+    DS1302_togglewrite( *p++, false);  
   }
-  _DS1302_stop();
+  DS1302_stop();
 }
 
 
@@ -500,11 +492,11 @@ uint8_t DS1302_read(int address)
   // set lowest bit (read bit) in address
   bitSet( address, DS1302_READBIT);  
 
-  _DS1302_start();
+  DS1302_start();
   // the I/O-line is released for the data
-  _DS1302_togglewrite( address, true);  
-  data = _DS1302_toggleread();
-  _DS1302_stop();
+  DS1302_togglewrite( address, true);  
+  data = DS1302_toggleread();
+  DS1302_stop();
 
   return (data);
 }
@@ -526,17 +518,17 @@ void DS1302_write( int address, uint8_t data)
   // clear lowest bit (read bit) in address
   bitClear( address, DS1302_READBIT);  
 
-  _DS1302_start();
+  DS1302_start();
   // don't release the I/O-line
-  _DS1302_togglewrite( address, false);
+  DS1302_togglewrite( address, false);
   // don't release the I/O-line
-  _DS1302_togglewrite( data, false);
-  _DS1302_stop();  
+  DS1302_togglewrite( data, false);
+  DS1302_stop();  
 }
 
 
 // --------------------------------------------------------
-// _DS1302_start
+// DS1302_start
 //
 // A helper function to setup the start condition.
 //
@@ -546,89 +538,86 @@ void DS1302_write( int address, uint8_t data)
 // At startup, the pins of the Arduino are high impedance.
 // Since the DS1302 has pull-down resistors,
 // the signals are low (inactive) until the DS1302 is used.
-void _DS1302_start( void)
+void DS1302_start()
 {
-  digitalWrite( DS1302_CE_PIN, LOW); // default, not enabled
-  pinMode( DS1302_CE_PIN, OUTPUT);  
+  digitalWrite(pinDS1302_reset, LOW); // default, not enabled
+  pinMode(pinDS1302_reset, OUTPUT);  
 
-  digitalWrite( DS1302_SCLK_PIN, LOW); // default, clock low
-  pinMode( DS1302_SCLK_PIN, OUTPUT);
+  digitalWrite(pinDS1302_clock, LOW); // default, clock low
+  pinMode(pinDS1302_clock, OUTPUT);
 
-  pinMode( DS1302_IO_PIN, OUTPUT);
+  pinMode(pinDS1302_data, OUTPUT);
 
-  digitalWrite( DS1302_CE_PIN, HIGH); // start the session
+  digitalWrite(pinDS1302_reset, HIGH); // start the session
   delayMicroseconds( 4);           // tCC = 4us
 }
 
 
 // --------------------------------------------------------
-// _DS1302_stop
+// DS1302_stop
 //
 // A helper function to finish the communication.
 //
-void _DS1302_stop(void)
+void DS1302_stop()
 {
   // Set CE low
-  digitalWrite( DS1302_CE_PIN, LOW);
+  digitalWrite(pinDS1302_reset, LOW);
 
   delayMicroseconds( 4);           // tCWH = 4us
 }
 
 
 // --------------------------------------------------------
-// _DS1302_toggleread
+// DS1302_toggleread
 //
 // A helper function for reading a byte with bit toggle
 //
 // This function assumes that the SCLK is still high.
 //
-uint8_t _DS1302_toggleread( void)
+uint8_t DS1302_toggleread()
 {
-  uint8_t i, data;
-
-  data = 0;
-  for( i = 0; i <= 7; i++)
+  uint8_t data = 0;
+  for(int i = 0; i != 8; i++)
   {
     // Issue a clock pulse for the next databit.
     // If the 'togglewrite' function was used before
     // this function, the SCLK is already high.
-    digitalWrite( DS1302_SCLK_PIN, HIGH);
+    digitalWrite(pinDS1302_clock, HIGH);
     delayMicroseconds( 1);
 
     // Clock down, data is ready after some time.
-    digitalWrite( DS1302_SCLK_PIN, LOW);
+    digitalWrite(pinDS1302_clock, LOW);
     delayMicroseconds( 1);        // tCL=1000ns, tCDD=800ns
 
     // read bit, and set it in place in 'data' variable
-    bitWrite( data, i, digitalRead( DS1302_IO_PIN));
+    bitWrite( data, i, digitalRead(pinDS1302_data));
   }
   return( data);
 }
 
 
 // --------------------------------------------------------
-// _DS1302_togglewrite
+// DS1302_togglewrite
 //
 // A helper function for writing a byte with bit toggle
 //
 // The 'release' parameter is for a read after this write.
 // It will release the I/O-line and will keep the SCLK high.
 //
-void _DS1302_togglewrite( uint8_t data, uint8_t release)
-{
-  int i;
 
-  for( i = 0; i <= 7; i++)
+void DS1302_togglewrite(const uint8_t data, const uint8_t release)
+{
+  for(int i = 0; i != 8; ++i)
   {
     // set a bit of the data on the I/O-line
-    digitalWrite( DS1302_IO_PIN, bitRead(data, i));  
+    digitalWrite(pinDS1302_data, bitRead(data, i));  
     delayMicroseconds( 1);     // tDC = 200ns
 
     // clock up, data is read by DS1302
-    digitalWrite( DS1302_SCLK_PIN, HIGH);    
-    delayMicroseconds( 1);     // tCH = 1000ns, tCDH = 800ns
+    digitalWrite(pinDS1302_clock, HIGH);    
+    delayMicroseconds(1);     // tCH = 1000ns, tCDH = 800ns
 
-    if( release && i == 7)
+    if(release && i == 7)
     {
       // If this write is followed by a read,
       // the I/O-line should be released after
@@ -638,7 +627,7 @@ void _DS1302_togglewrite( uint8_t data, uint8_t release)
       // the I/O-line at this moment,
       // and that could cause a shortcut spike
       // on the I/O-line.
-      pinMode( DS1302_IO_PIN, INPUT);
+      pinMode(pinDS1302_data, INPUT);
 
       // For Arduino 1.0.3, removing the pull-up is no longer needed.
       // Setting the pin as 'INPUT' will already remove the pull-up.
@@ -646,8 +635,8 @@ void _DS1302_togglewrite( uint8_t data, uint8_t release)
     }
     else
     {
-      digitalWrite( DS1302_SCLK_PIN, LOW);
-      delayMicroseconds( 1);       // tCL=1000ns, tCDD=800ns
+      digitalWrite(pinDS1302_clock, LOW);
+      delayMicroseconds(1);       // tCL=1000ns, tCDD=800ns
     }
   }
 }
