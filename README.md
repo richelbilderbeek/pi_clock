@@ -2,11 +2,13 @@
 
 Arduino project for a clock that displays the time in binary beeps at pi o'clock PM
 
+[Movie of the PiClock ticking (.mpg) ](PiClock.mpg)
 
 ![Pi Clock 1](PiClockFront1.jpg)
 ![Pi Clock 2](PiClockFront2.jpg)
 ![Pi Clock 3](PiClockFront3.jpg)
 ![Pi Clock 4](PiClockFront4.jpg)
+
 
 ## How to read the time
 
@@ -18,7 +20,7 @@ Determine which LED goes on an off every second. This is LED with index 0. Then 
 | minutes   |    |   |   |   | 1  | 2  | 4 | 8 | 16 | 32 |   |   | Green |
 | hours     | 16 |   |   |   |    |    |   |   | 1  | 2  | 4 | 8 | Blue  |
 
-### Example 2
+### Example 1
 
 Image the LEDs having the following colors (R: Red, G: Green, B: blue, blank: no color):
 
