@@ -21,6 +21,7 @@ Determine which LED goes on an off every second. This is LED with index 0. Then 
 Examples
 
 | LED       |  R | R | R | R |    | G  | G | G | B  | B  | B | B | Blue  |
+|-----------|----|---|---|---|----|----|---|---|----|----|---|---|------:|
 
 This equals: 3:14:15 (hh:mm:ss)
 
