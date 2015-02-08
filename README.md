@@ -2,12 +2,12 @@
 
 Arduino project for a clock that displays the time in binary beeps at pi o'clock PM
 
-[Movie of the PiClock ticking (.mpg) ](PiClock.mpg)
+[Movie of the PiClock ticking (.mpg) ](NeoPixels/PiClock.mpg)
 
-![Pi Clock 1](PiClockFront1.jpg)
-![Pi Clock 2](PiClockFront2.jpg)
-![Pi Clock 3](PiClockFront3.jpg)
-![Pi Clock 4](PiClockFront4.jpg)
+![Pi Clock 1](NeoPixels/PiClockFront1.jpg)
+![Pi Clock 2](NeoPixels/PiClockFront2.jpg)
+![Pi Clock 3](NeoPixels/PiClockFront3.jpg)
+![Pi Clock 4](NeoPixels/PiClockFront4.jpg)
 
 
 ## How to read the time
@@ -74,11 +74,11 @@ This equals: 23:59:59 (hh:mm:ss)
 
 ## Backside
 
-![Pi Clock 5](PiClock5.jpg)
-![Pi Clock 6](PiClock6.jpg)
-![Pi Clock 7](PiClock7.jpg)
+![Pi Clock 5](NeoPixels/PiClock5.jpg)
+![Pi Clock 6](NeoPixels/PiClock6.jpg)
+![Pi Clock 7](NeoPixels/PiClock7.jpg)
 
 ## Prototype
 
-![Pi Clock Prototype 1](PiClockPrototype1.jpg)
-![Pi Clock Prototype 2](PiClockPrototype2.jpg)
+![Pi Clock Prototype 1](NeoPixels/PiClockPrototype1.jpg)
+![Pi Clock Prototype 2](NeoPixels/PiClockPrototype2.jpg)
