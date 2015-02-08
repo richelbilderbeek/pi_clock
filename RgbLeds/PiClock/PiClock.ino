@@ -99,12 +99,16 @@ Tweede shift register:
 
 */
 
+#include <LongTimer.h>
+
+//If NDEBUG is #defined, it is a release version
+//If NDEBUG is commented out, it is a debug version
+#define NDEBUG
+
 const int datapin  = 2;
 const int latchpin = 3;
 const int clockpin = 4;
 const int pin_16_hours = 5; //The pin connected to the LED to show 16 hours
-
-
 
 void setup() 
 {
@@ -113,54 +117,52 @@ void setup()
   pinMode(datapin , OUTPUT);
   pinMode(pin_16_hours , OUTPUT);
   Serial.begin(9600);
+  #ifndef NDEBUG
+  Serial.println("PiClock v. 1.0 (debug version)");
+  #else //NDEBUG
+  Serial.println("PiClock v. 1.0 (release version)");
+  #endif //NDEBUG
+  Serial.println("LongTimer v. " + LongTimer::GetVersion());
   ShowBinary(0);
-
-}
-
-int GetSecs()
-{
-  return (millis() / 1000) % 60; 
-}
-
-int GetMins()
-{
-  return ((millis() / 1000) / 60) % 60; 
-}
-
-int GetHours()
-{
-  return (((millis() / 1000) / 60) / 60) % 24; 
 }
 
 void loop() 
 {
-  ShowTime(GetSecs(),GetMins(),GetHours());
-  /*  
-  for (int i=0; i!=256; ++i)
+  LongTimer t;
+  while (1)
   {
-    Serial.println(IntToBinary(i)); 
+    ShowTime(
+      static_cast<int>(t.GetSecs() % 60),
+      static_cast<int>(t.GetMins() % 60),
+      static_cast<int>(t.GetHours() % 24)
+    );
     delay(1000);
-  }
-  */
-  /*
-  for (int i=0; i!=16; ++i)
-  {
-    ShowBinary(1 << i);
+    /*  
+    for (int i=0; i!=256; ++i)
+    {
+      Serial.println(IntToBinary(i)); 
+      delay(1000);
+    }
+    */
+    /*
+    for (int i=0; i!=16; ++i)
+    {
+      ShowBinary(1 << i);
+      delay(1000);
+    }
+    */
+    /*
+    ShowTime(8,8,8);
     delay(1000);
+    */
+    /*
+    for (int i=0; i!=5; ++i)
+    {
+      ShowTime(1 << i,1 << i,1 << i);
+      delay(1000);
+    }
+    */
   }
-  */
-  /*
-  ShowTime(8,8,8);
-  delay(1000);
-  */
-  /*
-  for (int i=0; i!=5; ++i)
-  {
-    ShowTime(1 << i,1 << i,1 << i);
-    delay(1000);
-  }
-  */
-  
 }
 
 void ShowTime(const int secs, const int mins, const int hours)
@@ -171,22 +173,25 @@ void ShowTime(const int secs, const int mins, const int hours)
   {
     if ((1 << (4 - 1 - i)) & hours) { ++x; }
     x <<= 1;
-    if (x < 0) Serial.println("ERROR");    
+    //if (x < 0) Serial.println("ERROR");    
   }
   for (int i=0; i!=6; ++i)
   {
     if ((1 << (6 - 1 - i)) & mins) { ++x; }
     x <<= 1;   
-    if (x < 0) Serial.println("ERROR");    
+    //if (x < 0) Serial.println("ERROR");    
   }
   for (int i=0; i!=6; ++i)
   {
     if ((1 << (6 - 1 - i)) & secs) { ++x; }
     if (i < 5) { x <<= 1; }   
-    if (x < 0) Serial.println("ERROR");    
+    //if (x < 0) Serial.println("ERROR");    
   }
-  if (x < 0) Serial.println("ERROR");    
+  //if (x < 0) Serial.println("ERROR");    
+  
+  #ifndef NDEBUG
   Serial.println(IntToBinary(x));
+  #endif //NDEBUG
   ShowBinary(x % (256 * 256));
 }
 
@@ -214,9 +219,11 @@ void ShowBinary(const long value) //Must be long
   const long high_value = value / 256;
   const long low_value  = value % 256;
 
+  #ifndef NDEBUG
   Serial.print(IntToBinary(high_value));
   Serial.print(" ");
   Serial.println(IntToBinary(low_value));
+  #endif // NDEBUG
 
   //Schrijf naar de shift registers
   //(opmerking: mocht je toch maar een shift register aansluiten,
