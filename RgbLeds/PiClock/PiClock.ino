@@ -97,8 +97,30 @@ Tweede shift register:
  15: naar LED 9
  16: naar 5V
 
+  Connecting the capacitive sensors:
+  
+  8              9 
+  |  +--------+  |
+  +--+ R      +--+
+  |  +--------+
+  |
+  X
+  
+  10             11 
+  |  +--------+  |
+  +--+ R      +--+
+  |  +--------+
+  |
+  X
+  
+  8,10: sensor pins
+  0,11: helper pins
+  R: resistance of at least 1 Mega-Ohm (brown-black-green-gold)
+  X: place to touch wire
+
 */
 
+#include <CapacitiveSensor.h>
 #include <LongTimer.h>
 
 //If NDEBUG is #defined, it is a release version
@@ -109,6 +131,21 @@ const int datapin  = 2;
 const int latchpin = 3;
 const int clockpin = 4;
 const int pin_16_hours = 5; //The pin connected to the LED to show 16 hours
+
+const int pin_sensor1 =  8;
+const int pin_helper1 =  9;
+CapacitiveSensor sensor1 
+  = CapacitiveSensor(pin_helper1,pin_sensor1);        
+
+const int pin_sensor2 =  10;
+const int pin_helper2 =  11;
+CapacitiveSensor sensor2 
+  = CapacitiveSensor(pin_helper2,pin_sensor2);        
+
+LongTimer t;
+int delta_hours = 0;
+int delta_mins = 0;
+int delta_secs = 0;
 
 void setup() 
 {
@@ -126,17 +163,184 @@ void setup()
   ShowBinary(0);
 }
 
-void loop() 
+//0 = 00 : none pressed
+//1 = 01 : right pressed
+//2 = 10 : left pressed
+//3 = 11 : both pressed
+const int state_no_sensor_pressed    = 0; //00
+const int state_right_sensor_pressed = 1; //01
+const int state_left_sensor_pressed  = 2; //10
+const int state_both_sensors_pressed = 3; //11
+int GetSensors()
 {
-  LongTimer t;
+  //The higher 'samples' is set, the more accurate the sensors measure
+  const int samples = 30;
+  //Measure the capacitive sensors
+  const int r1 = sensor1.capacitiveSensor(samples);
+  const int r2 = sensor2.capacitiveSensor(samples);
+  //The threshold value, which determines the sensitivity of the sensors
+  // - too low: the program will think more often there is a touch, possibly even when you do not touch
+  // - too high: the program will think less often there is a touch, possibly even when you do touch 
+  const int threshold = 100;
+  const int state =  (r1 >= threshold ? 2 : 0) + (r2 >= threshold ? 1 : 0);
+  return state;
+}
+
+void SetHours()
+{
+  Serial.println("Setting hours");
+  int h = GetHours();
+  bool accept = false; //Accept editing the hours
   while (1)
   {
-    ShowTime(
-      static_cast<int>(t.GetSecs() % 60),
-      static_cast<int>(t.GetMins() % 60),
-      static_cast<int>(t.GetHours() % 24)
-    );
-    delay(1000);
+    const int sensor_state = GetSensors();
+    if (sensor_state == state_left_sensor_pressed)
+    {
+      delta_hours = ((h - t.GetHours()) + 24) % 24;
+      break; 
+    }
+    if (sensor_state == state_right_sensor_pressed)
+    {
+      if (accept) { h = (h + 1) % 24; }
+      else { accept = true; }
+    }
+    ShowTime(0,0,h);
+    delay(100);
+  }
+}
+
+void SetMinutes()
+{
+  Serial.println("Setting minutes");
+  int m = GetMins();
+  bool accept = false; //Accept editing the minutes
+  while (1)
+  {
+    ShowTime(0,m,0);
+    const int sensor_state = GetSensors();
+    if (sensor_state == state_left_sensor_pressed)
+    {
+      delta_mins = ((m - t.GetMins()) + 60) % 60;
+      break; 
+    }
+    if (sensor_state == state_right_sensor_pressed)
+    {
+      if (accept) { m = (m + 1) % 60; }
+      else { accept = true; }
+    }
+    delay(100);
+  }
+}
+
+void SetSeconds()
+{
+  Serial.println("Setting seconds");
+  int s = GetSecs();
+  bool accept = false; //Accept editing the seconds
+  while (1)
+  {
+    ShowTime(s,0,0);
+    const int sensor_state = GetSensors();
+    if (sensor_state == state_left_sensor_pressed)
+    {
+      delta_secs = ((s - t.GetSecs()) + 60) % 60;
+      break; 
+    }
+    if (sensor_state == state_right_sensor_pressed)
+    {
+      if (accept) { s = (s + 1) % 60; }
+      else { accept = true; }
+    }
+    delay(100);
+  }
+}
+
+void SetTime()
+{
+  Serial.println("Setting time");
+  //The user can choose to set the hours, make the hours blink
+  while (1)
+  {
+    //Blink hours
+    ShowTime(0,0,31);
+    delay(100);
+    ShowTime(0,0,0);
+    delay(100);
+    const int sensor_state = GetSensors();
+    if (sensor_state == state_right_sensor_pressed)
+    {
+      SetHours();
+      break;
+    }
+    if (sensor_state == state_left_sensor_pressed)
+    {
+      break; 
+    }
+  }  
+  //The user can choose to set the minutes, make the minutes blink
+  while (1)
+  {
+    //Blink minutes
+    ShowTime(0,63,0);
+    delay(100);
+    ShowTime(0,0,0);
+    delay(100);
+    const int sensor_state = GetSensors();
+    if (sensor_state == state_right_sensor_pressed)
+    {
+      SetMinutes();
+      break;
+    }
+    if (sensor_state == state_left_sensor_pressed)
+    {
+      break; 
+    }
+  }  
+  //The user can choose to set the seconds, make the seconds blink
+  while (1)
+  {
+    //Blink second
+    ShowTime(63,0,0);
+    delay(100);
+    ShowTime(0,0,0);
+    delay(100);
+    const int sensor_state = GetSensors();
+    if (sensor_state == state_right_sensor_pressed)
+    {
+      SetSeconds();
+      break;
+    }
+    if (sensor_state == state_left_sensor_pressed)
+    {
+      break; 
+    }
+  }  
+}
+
+int GetSecs()
+{
+ return (t.GetSecs() + delta_secs) % 60;
+}
+
+int GetMins()
+{
+ return (t.GetMins() + delta_mins) % 60;
+}
+
+int GetHours()
+{
+ return (t.GetHours() + delta_hours) % 24;
+}
+
+void loop() 
+{
+  while (1)
+  {
+    //Respond to touches
+    if (GetSensors() == state_left_sensor_pressed) { SetTime(); }
+
+    ShowTime(GetSecs(),GetMins(),GetHours());
+    delay(100);
     /*  
     for (int i=0; i!=256; ++i)
     {
