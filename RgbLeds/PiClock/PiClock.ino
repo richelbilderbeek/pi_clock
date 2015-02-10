@@ -166,6 +166,8 @@ const int latchpin = 3;
 const int clockpin = 4;
 const int pin_16_hours = 5; //The pin connected to the LED to show 16 hours
 
+const int pin_piezo = 6; //The pin connected to the piezo
+
 const int pin_sensor1 =  8;
 const int pin_helper1 =  9;
 CapacitiveSensor sensor1 
@@ -385,13 +387,37 @@ int GetHours()
 
 void loop() 
 {
+  bool is_pi_oclock = false;
+  
   while (1)
   {
     //Respond to touches
     if (GetSensors() == state_left_sensor_pressed) { SetTime(); }
 
     //Show the time
-    ShowTime(GetSecs(),GetMins(),GetHours());
+    const int h = GetHours();
+    const int m = GetMins();
+    const int s = GetSecs(); 
+    ShowTime(s,m,h);
+
+
+    //Detect pi o'clock
+    if (h == 15 && m == 14) 
+    {
+      //Already beeped?
+      if (!is_pi_oclock)
+      {
+        is_pi_oclock = true;
+        const int frequency_hz = 3142;
+        const int duration_msec = 3142;
+        tone(pin_piezo,frequency_hz,duration_msec);
+      }
+    }
+    else 
+    { 
+      is_pi_oclock = false; 
+    }
+
     delay(100);
   }
 }
