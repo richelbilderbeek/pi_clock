@@ -1,103 +1,112 @@
-// Pi Clock
-// (C) 2015 Richel Bilderbeek
-// #  0  1  2  3  4  5  6  7  8
-// s  1  2  4  8 16 32
-// m           1  2  4  8 16 32
-// h  8 16              1  2  4
-//
-//
 /*
 
-
-Omschrijving chip SN74HC595:
-
- 16 15 14 13 12 11 10 9
- |  |  |  |  |  |  |  |
- +--+--+--+--+--+--+--+
- |>                   |
- +--+--+--+--+--+--+--+
- |  |  |  |  |  |  |  |
- 1  2  3  4  5  6  7  8
-
- Officiele pin namen:
-
- 1: Q2
- 2: Q3
- 3: Q4
- 3: Q5
- 5: Q6
- 6: Q7
- 7: Q8 
- 8: GND
- 9: QH*: om te daisy chainen, anders ongebruikt
- 10: SRCLR* (naar 5V)
- 11: SRCLK (naar D4): clock pin
- 12: RCLK (naar D3): latch pin
- 13: OE* (naar GND)
- 14: SER (naar D2): data pin
- 15: Q1
- 16: VCC (naar 5V)
+  Pi Clock with RGB LEDs
+  (C) 2015 Richel Bilderbeek
 
 
-Eerste shift register:
+Clock layout:
 
- 16 15 14 13 12 11 10 9
- |  |  |  |  |  |  |  |
- +--+--+--+--+--+--+--+
- |>                   |
- +--+--+--+--+--+--+--+
- |  |  |  |  |  |  |  |
- 1  2  3  4  5  6  7  8
+ #  0  1  2  3  4  5  6  7  8
+ s  1  2  4  8 16 32
+ m           1  2  4  8 16 32
+ h  8 16              1  2  4
 
- Verbindingen:
 
- 1: LED 2
- 2: LED 3
- 3: LED 4
- 3: LED 5
- 5: LED 6
- 6: LED 7
- 7: LED 8 
- 8: GND
- 9: naar pin 14 van het tweede shift register (dit is de daisy chain verbinding)
- 10: naar 5V
- 11: naar D4: clock pin
- 12: naar D3: latch pin
- 13: naar GND
- 14: naar D2: data pin
- 15: naar LED1
- 16: naar 5V
+Arduino connections:
+   2: to first shift register pin 14: data pin (the other shift register gets its data from daisy chaining)
+   3: to both shift registers pin 12: latch pin
+   4: to both shift registers pin 11: clock pin
+   5: RGB LED 2, blue, displays 16 hours
+   8: Left capacitive sensor, sensor pin
+   9: Left capacitive sensor, helper pin
+  10: Right capacitive sensor, sensor pin
+  11: Right capacitive sensor, helper pin
 
-Tweede shift register:
+Description shift register chip SN74HC595:
 
- 16 15 14 13 12 11 10 9
- |  |  |  |  |  |  |  |
- +--+--+--+--+--+--+--+
- |>                   |
- +--+--+--+--+--+--+--+
- |  |  |  |  |  |  |  |
- 1  2  3  4  5  6  7  8
+  16 15 14 13 12 11 10 9
+  |  |  |  |  |  |  |  |
+  +--+--+--+--+--+--+--+
+  |>                   |
+  +--+--+--+--+--+--+--+
+  |  |  |  |  |  |  |  |
+  1  2  3  4  5  6  7  8
 
- Verbindingen:
+SN74HC595 pin names:
 
- 1: LED 10
- 2: LED 11
- 3: LED 12
- 3: LED 13
- 5: LED 14
- 6: LED 15
- 7: LED 816
- 8: GND
- 9: wordt niet gebruikt
- 10: naar 5V
- 11: naar D4: clock pin
- 12: naar D3: latch pin
- 13: naar GND
- 14: naar pin 9 van eerste shift register (dit is de daisy chain verbinding)
- 15: naar LED 9
- 16: naar 5V
+   1: Q2
+   2: Q3
+   3: Q4
+   3: Q5
+   5: Q6
+   6: Q7
+   7: Q8 
+   8: GND
+   9: QH*: for daisy chaining, unused otherwise
+  10: SRCLR* (to 5V)
+  11: SRCLK (to D4): clock pin
+  12: RCLK (to D3): latch pin
+  13: OE* (to GND)
+  14: SER (to D2): data pin
+  15: Q1
+  16: VCC (to 5V)
 
-  Connecting the capacitive sensors:
+First shift register SN74HC595 connections:
+
+  16 15 14 13 12 11 10 9
+  |  |  |  |  |  |  |  |
+  +--+--+--+--+--+--+--+
+  |>                   |
+  +--+--+--+--+--+--+--+
+  |  |  |  |  |  |  |  |
+  1  2  3  4  5  6  7  8
+
+   1: RGB LED 2, red, displays 2 seconds
+   2: RGB LED 3, red, displays 4 seconds
+   3: RGB LED 4, red, displays 8 seconds
+   3: RGB LED 5, red, displays 16 seconds
+   5: RGB LED 6, red, displays 32 seconds
+   6: RGB LED 4, green, displays 1 minutes
+   7: RGB LED 5, green, displays 2 minutes 
+   8: GND
+   9: to pin 14 of the second shift register (this is the daisy chain connection)
+  10: to 5V
+  11: to D4: clock pin
+  12: to D3: latch pin
+  13: to GND
+  14: to D2: data pin
+  15: RGB LED 1, red, displays 1 seconds
+  16: to 5V
+
+Second shift register SN74HC595 connections:
+
+  16 15 14 13 12 11 10 9
+  |  |  |  |  |  |  |  | 
+  +--+--+--+--+--+--+--+
+  |>                   |
+  +--+--+--+--+--+--+--+
+  |  |  |  |  |  |  |  |
+  1  2  3  4  5  6  7  8
+
+
+   1: RGB LED 7, green, displays 8 minutes
+   2: RGB LED 8, green, displays 16 minutes
+   3: RGB LED 9, green, displays 32 minutes
+   3: RGB LED 6, blue, displays 1 hours
+   5: RGB LED 7, blue, displays 2 hours
+   6: RGB LED 8, blue, displays 4 hours
+   7: RGB LED 9, blue, displays 8 hours
+   8: GND
+   9: unused, used for daisy chaining otherwise
+  10: to 5V
+  11: to D4: clock pin
+  12: to D3: latch pin
+  13: to GND
+  14: connect to pin 9 of first shift register (this is the daisy chain connection)
+  15: RGB LED 6, green, displays 4 minutes
+  16: to 5V
+
+Left capacitive sensor:
   
   8              9 
   |  +--------+  |
@@ -105,6 +114,13 @@ Tweede shift register:
   |  +--------+
   |
   X
+
+  8: sensor pin
+  9: helper pin
+  R: resistance of at least 1 Mega-Ohm (brown-black-green-gold)
+  X: place to touch wire
+
+Right capacitive sensor:
   
   10             11 
   |  +--------+  |
@@ -113,10 +129,28 @@ Tweede shift register:
   |
   X
   
-  8,10: sensor pins
-  0,11: helper pins
+  10: sensor pin
+  11: helper pin
   R: resistance of at least 1 Mega-Ohm (brown-black-green-gold)
   X: place to touch wire
+
+
+RGB LEDs:
+    ___
+   /   \
+  |     |
+  +-+-+-+
+  | | | |
+  | | | |
+  | | |
+    |
+    
+  1 2 3 4
+
+1: Blue, connect with resistance of 1000 (brown-black-red-gold) to Arduino pin
+2: GND
+3: Red, connect with resistance of 1000 (brown-black-red-gold) to Arduino pin
+4: Green, connect with resistance of 2200 (red-red-red-gold) to Arduino pin
 
 */
 
@@ -149,9 +183,9 @@ int delta_secs = 0;
 
 void setup() 
 {
-  pinMode(latchpin, OUTPUT);
-  pinMode(clockpin, OUTPUT);
-  pinMode(datapin , OUTPUT);
+  pinMode(latchpin,OUTPUT);
+  pinMode(clockpin,OUTPUT);
+  pinMode(datapin ,OUTPUT);
   pinMode(pin_16_hours , OUTPUT);
   Serial.begin(9600);
   #ifndef NDEBUG
@@ -171,6 +205,8 @@ const int state_no_sensor_pressed    = 0; //00
 const int state_right_sensor_pressed = 1; //01
 const int state_left_sensor_pressed  = 2; //10
 const int state_both_sensors_pressed = 3; //11
+
+///Obtain the current state of both capacitive sensors
 int GetSensors()
 {
   //The higher 'samples' is set, the more accurate the sensors measure
@@ -186,6 +222,9 @@ int GetSensors()
   return state;
 }
 
+/// User can choose to set the hours
+/// - left sensor: cancel
+/// - right sensor: set hours
 void SetHours()
 {
   Serial.println("Setting hours");
@@ -209,6 +248,9 @@ void SetHours()
   }
 }
 
+/// User can choose to set the minutes
+/// - left sensor: cancel
+/// - right sensor: set minutes
 void SetMinutes()
 {
   Serial.println("Setting minutes");
@@ -232,6 +274,9 @@ void SetMinutes()
   }
 }
 
+/// User can choose to set the seconds
+/// - left sensor: cancel
+/// - right sensor: set seconds
 void SetSeconds()
 {
   Serial.println("Setting seconds");
@@ -255,6 +300,9 @@ void SetSeconds()
   }
 }
 
+/// User can choose to set the time
+/// - left sensor: select hours, minutes, seconds, cancel
+/// - right sensor: change hours, minutes, seconds
 void SetTime()
 {
   Serial.println("Setting time");
@@ -317,16 +365,19 @@ void SetTime()
   }  
 }
 
+///Get the set clock time its seconds
 int GetSecs()
 {
  return (t.GetSecs() + delta_secs) % 60;
 }
 
+///Get the set clock time its minutes
 int GetMins()
 {
  return (t.GetMins() + delta_mins) % 60;
 }
 
+///Get the set clock time its hours
 int GetHours()
 {
  return (t.GetHours() + delta_hours) % 24;
@@ -339,39 +390,19 @@ void loop()
     //Respond to touches
     if (GetSensors() == state_left_sensor_pressed) { SetTime(); }
 
+    //Show the time
     ShowTime(GetSecs(),GetMins(),GetHours());
     delay(100);
-    /*  
-    for (int i=0; i!=256; ++i)
-    {
-      Serial.println(IntToBinary(i)); 
-      delay(1000);
-    }
-    */
-    /*
-    for (int i=0; i!=16; ++i)
-    {
-      ShowBinary(1 << i);
-      delay(1000);
-    }
-    */
-    /*
-    ShowTime(8,8,8);
-    delay(1000);
-    */
-    /*
-    for (int i=0; i!=5; ++i)
-    {
-      ShowTime(1 << i,1 << i,1 << i);
-      delay(1000);
-    }
-    */
   }
 }
 
+///Show the time on all RGB LEDs
 void ShowTime(const int secs, const int mins, const int hours)
 {
+  //The 16 hours pin is trivial
   digitalWrite(pin_16_hours,hours >= 16 ? HIGH : LOW);
+  
+  //Write the rest of the time to the two shift registers
   long x = 0; //The number to show in binary, must be long
   for (int i=0; i!=4; ++i)
   {
@@ -391,14 +422,15 @@ void ShowTime(const int secs, const int mins, const int hours)
     if (i < 5) { x <<= 1; }   
     //if (x < 0) Serial.println("ERROR");    
   }
-  //if (x < 0) Serial.println("ERROR");    
   
   #ifndef NDEBUG
+  if (x < 0) Serial.println("ERROR");    
   Serial.println(IntToBinary(x));
   #endif //NDEBUG
   ShowBinary(x % (256 * 256));
 }
 
+///Convert an integer value to a binary string
 String IntToBinary(const long x) //Must be long 
 {
   if (x < 0) { Serial.println("IntToBinary error: x must be positive"); }    
@@ -412,14 +444,15 @@ String IntToBinary(const long x) //Must be long
 }
 
 
+///Show a binanry value with the RGB LEDs 
 void ShowBinary(const long value) //Must be long
 {
   if (value < 0) { Serial.println("ShowBinary error: value must be positive"); }
-  //Start met schrijven
+  //Start of modification
   digitalWrite(latchpin,LOW);
 
-  //Bereken wat te schrijven
-  // (dit moet in twee keer: een keer per shift register)
+  //Calculate what to write
+  // (these are two values: one per shift register)
   const long high_value = value / 256;
   const long low_value  = value % 256;
 
@@ -429,14 +462,14 @@ void ShowBinary(const long value) //Must be long
   Serial.println(IntToBinary(low_value));
   #endif // NDEBUG
 
-  //Schrijf naar de shift registers
-  //(opmerking: mocht je toch maar een shift register aansluiten,
-  // dan wordt de high_value gewoon overschreven door de low_value,
-  // oftewel: je ziet dan enkel de low_value)
+  //Write to shift registers
+  //(note: would you only connect one shift register,
+  // you will only see low_value,
+  // as high_value will simply be overwritten)
   WriteToShiftRegister(high_value); 
   WriteToShiftRegister(low_value);
 
-  //Klaar met schrijven
+  //Done with modification
   digitalWrite(latchpin,HIGH);
 }
 
