@@ -155,6 +155,7 @@ RGB LEDs:
 */
 
 #include <CapacitiveSensor.h>
+#include <LiquidCrystal.h>
 #include <LongTimer.h>
 
 //If NDEBUG is #defined, it is a release version
@@ -178,6 +179,8 @@ const int pin_helper2 =  11;
 CapacitiveSensor sensor2 
   = CapacitiveSensor(pin_helper2,pin_sensor2);        
 
+LiquidCrystal lcd(A5,A4,A3,A2,A1,A0);
+
 LongTimer t;
 int delta_hours = 0;
 int delta_mins = 0;
@@ -189,7 +192,7 @@ void setup()
   pinMode(clockpin,OUTPUT);
   pinMode(datapin ,OUTPUT);
   pinMode(pin_16_hours , OUTPUT);
-  Serial.begin(9600);
+  Serial.begin(9600); //Cannot be used: chip is used stand-alone
   #ifndef NDEBUG
   Serial.println("PiClock v. 1.0 (debug version)");
   #else //NDEBUG
@@ -197,6 +200,7 @@ void setup()
   #endif //NDEBUG
   Serial.println("LongTimer v. " + LongTimer::GetVersion());
   ShowBinary(0);
+  lcd.begin(16,2);
 }
 
 //0 = 00 : none pressed
@@ -402,13 +406,16 @@ void loop()
     const int s = GetSecs(); 
     ShowTime(s,m,h);
 
-    if (sensors_state == state_right_sensor_pressed) 
+    //if (sensors_state == state_right_sensor_pressed) 
     { 
       //Send debug message to console window
       const String time_now = "Time: " + String(h) + ":" + String(m) + ":" + String(s);
       const String deltas = "Deltas: " + String(delta_hours) + ":" + String(delta_mins) + ":" + String(delta_secs);
-      Serial.println(time_now);
-      Serial.println(deltas);
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print(time_now);
+      lcd.setCursor(0,1);
+      lcd.print(deltas);
     }
 
     //Detect pi o'clock
