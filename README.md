@@ -1,6 +1,6 @@
 # PiClock
 
-Arduino project for a clock that displays the time in binary beeps at pi o'clock PM
+Arduino project for a clock that displays the time in binary and beeps at pi o'clock PM
 
 [Movie of the PiClock ticking (.mpg) ](NeoPixels/PiClock.mpg)
 
