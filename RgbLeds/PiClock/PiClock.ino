@@ -387,12 +387,14 @@ int GetHours()
 
 void loop() 
 {
+  // Is it Pi o'clock yet? That is, 3:14 PM, also known as 15:14
   bool is_pi_oclock = false;
   
   while (1)
   {
     //Respond to touches
-    if (GetSensors() == state_left_sensor_pressed) { SetTime(); }
+    const int sensors_state = GetSensors();
+    if (sensors_state == state_left_sensor_pressed) { SetTime(); }
 
     //Show the time
     const int h = GetHours();
@@ -400,6 +402,14 @@ void loop()
     const int s = GetSecs(); 
     ShowTime(s,m,h);
 
+    if (sensors_state == state_right_sensor_pressed) 
+    { 
+      //Send debug message to console window
+      const String time_now = "Time: " + String(h) + ":" + String(m) + ":" + String(s);
+      const String deltas = "Deltas: " + String(delta_hours) + ":" + String(delta_mins) + ":" + String(delta_secs);
+      Serial.println(time_now);
+      Serial.println(deltas);
+    }
 
     //Detect pi o'clock
     if (h == 15 && m == 14) 
