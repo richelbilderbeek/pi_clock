@@ -378,7 +378,7 @@ int GetMins()
 {
  return (
    (
-       (t.GetSecs() + delta_secs) / 60) //There might be a carry from the seconds
+       ( (t.GetSecs() % 60) + delta_secs) / 60) //There might be a carry from the seconds
      + t.GetMins() 
      + delta_mins
    ) % 60;
@@ -389,7 +389,7 @@ int GetHours()
 {
  return 
    (
-       ((t.GetMins() + delta_mins) / 60) //There might be a carry from the minutes
+       (( (t.GetMins() % 60) + delta_mins) / 60) //There might be a carry from the minutes
      + t.GetHours() 
      + delta_hours
    ) % 24;
