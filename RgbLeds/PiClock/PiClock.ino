@@ -377,8 +377,11 @@ int GetSecs()
 int GetMins()
 {
  return (
-   (t.GetSecs() + delta_secs) / 60) //There might be a carry from the seconds
-   + t.GetMins() + delta_mins) % 60;
+   (
+       (t.GetSecs() + delta_secs) / 60) //There might be a carry from the seconds
+     + t.GetMins() 
+     + delta_mins
+   ) % 60;
 }
 
 ///Get the set clock time its hours
@@ -402,7 +405,7 @@ void loop()
   {
     //Respond to touches
     const int sensors_state = GetSensors();
-    if (sensors_state == state_left_sensor_pressed) { SetTime(); }
+    if (sensors_state == state_left_sensor_pressed) { SetTime(); delay(100); }
 
     //Show the time
     const int h = GetHours();
