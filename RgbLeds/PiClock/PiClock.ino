@@ -200,7 +200,7 @@ void setup()
   #endif //NDEBUG
   Serial.println("LongTimer v. " + LongTimer::GetVersion());
   ShowBinary(0);
-  lcd.begin(16,2);
+  lcd.begin(16,4);
 }
 
 //0 = 00 : none pressed
@@ -409,13 +409,18 @@ void loop()
     //if (sensors_state == state_right_sensor_pressed) 
     { 
       //Send debug message to console window
-      const String time_now = "Time: " + String(h) + ":" + String(m) + ":" + String(s);
-      const String deltas = "Deltas: " + String(delta_hours) + ":" + String(delta_mins) + ":" + String(delta_secs);
+      const String longtime_now = String(t.GetHours()) + ":" + String(t.GetMins()) + ":" + String(t.GetSecs());
+      const String deltas = String(delta_hours) + ":" + String(delta_mins) + ":" + String(delta_secs);
+      const String time_now = String(h) + ":" + String(m) + ":" + String(s);
       lcd.clear();
       lcd.setCursor(0,0);
-      lcd.print(time_now);
+      lcd.print(longtime_now);
       lcd.setCursor(0,1);
       lcd.print(deltas);
+      lcd.setCursor(0,2);
+      lcd.print("------------- +");
+      lcd.setCursor(0,3);
+      lcd.print(time_now);
     }
 
     //Detect pi o'clock
