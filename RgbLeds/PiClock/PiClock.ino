@@ -155,7 +155,6 @@ RGB LEDs:
 */
 
 #include <CapacitiveSensor.h>
-#include <LiquidCrystal.h>
 #include <LongTimer.h>
 
 //If NDEBUG is #defined, it is a release version
@@ -179,8 +178,6 @@ const int pin_helper2 =  11;
 CapacitiveSensor sensor2 
   = CapacitiveSensor(pin_helper2,pin_sensor2);        
 
-LiquidCrystal lcd(A5,A4,A3,A2,A1,A0);
-
 LongTimer t;
 int delta_hours = 0;
 int delta_mins = 0;
@@ -200,7 +197,6 @@ void setup()
   #endif //NDEBUG
   Serial.println("LongTimer v. " + LongTimer::GetVersion());
   ShowBinary(0);
-  lcd.begin(16,4);
 }
 
 //0 = 00 : none pressed
@@ -380,19 +376,27 @@ int GetSecs()
 ///Get the set clock time its minutes
 int GetMins()
 {
- return (t.GetMins() + delta_mins) % 60;
+ return (
+   (t.GetSecs() + delta_secs) / 60) //There might be a carry from the seconds
+   + t.GetMins() + delta_mins) % 60;
 }
 
 ///Get the set clock time its hours
 int GetHours()
 {
- return (t.GetHours() + delta_hours) % 24;
+ return 
+   (
+       ((t.GetMins() + delta_mins) / 60) //There might be a carry from the minutes
+     + t.GetHours() 
+     + delta_hours
+   ) % 24;
 }
 
 void loop() 
 {
   // Is it Pi o'clock yet? That is, 3:14 PM, also known as 15:14
   bool is_pi_oclock = false;
+  int last_sec = -1; //The previous second, used to detect a change in time, to be sent to serial monitor
   
   while (1)
   {
@@ -404,6 +408,13 @@ void loop()
     const int h = GetHours();
     const int m = GetMins();
     const int s = GetSecs(); 
+
+    if (last_sec == s) 
+    {
+      continue;
+    }
+
+    last_sec = s;
     ShowTime(s,m,h);
 
     //if (sensors_state == state_right_sensor_pressed) 
@@ -412,16 +423,13 @@ void loop()
       const String longtime_now = String(t.GetHours()) + ":" + String(t.GetMins()) + ":" + String(t.GetSecs());
       const String deltas = String(delta_hours) + ":" + String(delta_mins) + ":" + String(delta_secs);
       const String time_now = String(h) + ":" + String(m) + ":" + String(s);
-      lcd.clear();
-      lcd.setCursor(0,0);
-      lcd.print(longtime_now);
-      lcd.setCursor(0,1);
-      lcd.print(deltas);
-      lcd.setCursor(0,2);
-      lcd.print("------------- +");
-      lcd.setCursor(0,3);
-      lcd.print(time_now);
+      Serial.print(longtime_now);
+      Serial.print(" + ");
+      Serial.print(deltas);
+      Serial.print(" = ");
+      Serial.println(time_now);
     }
+
 
     //Detect pi o'clock
     if (h == 15 && m == 14) 
@@ -439,8 +447,6 @@ void loop()
     { 
       is_pi_oclock = false; 
     }
-
-    delay(100);
   }
 }
 
@@ -473,6 +479,7 @@ void ShowTime(const int secs, const int mins, const int hours)
   
   #ifndef NDEBUG
   if (x < 0) Serial.println("ERROR");    
+  Serial.print("LCD states: ");
   Serial.println(IntToBinary(x));
   #endif //NDEBUG
   ShowBinary(x % (256 * 256));
@@ -505,8 +512,9 @@ void ShowBinary(const long value) //Must be long
   const long low_value  = value % 256;
 
   #ifndef NDEBUG
+  Serial.print("high_value: ");
   Serial.print(IntToBinary(high_value));
-  Serial.print(" ");
+  Serial.print(", low_value: ");
   Serial.println(IntToBinary(low_value));
   #endif // NDEBUG
 
