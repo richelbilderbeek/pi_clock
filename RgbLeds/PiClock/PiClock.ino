@@ -392,6 +392,7 @@ int GetHours()
        (( (t.GetMins() % 60) + delta_mins) / 60) //There might be a carry from the minutes
      + t.GetHours() 
      + delta_hours
+     + 24
    ) % 24;
 }
 
