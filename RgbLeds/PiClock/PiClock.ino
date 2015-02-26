@@ -178,6 +178,19 @@ const int pin_helper2 =  11;
 CapacitiveSensor sensor2 
   = CapacitiveSensor(pin_helper2,pin_sensor2);        
 
+void OnError(const String& error_message)
+{
+  while (1)
+  {
+    //Blink LED
+    digitalWrite(pin_16_hours,!digitalRead(pin_16_hours));
+    //Write to serial
+    Serial.print("ERROR: ");  
+    Serial.println(error_message);  
+    delay(1000);
+  }
+}
+
 LongTimer t;
 int delta_hours = 0;
 int delta_mins = 0;
@@ -248,6 +261,12 @@ void SetHours()
     ShowTime(0,0,h);
     delay(100);
   }
+  #ifndef NDEBUG
+  if (h <  0) { OnError("h <  0, h = " + String(h)); }
+  if (h > 23) { OnError("h > 23, h = " + String(h)); }
+  if (delta_hours <  0) { OnError("delta_hours <  0, delta_hours = " + String(delta_hours)); }
+  if (delta_hours > 23) { OnError("delta_hours > 23, delta_hours = " + String(delta_hours)); }
+  #endif // NDEBUG
 }
 
 /// User can choose to set the minutes
@@ -274,6 +293,12 @@ void SetMinutes()
     }
     delay(100);
   }
+  #ifndef NDEBUG
+  if (m <  0) { OnError("m <  0, h = " + String(m)); }
+  if (m > 59) { OnError("m > 59, h = " + String(m)); }
+  if (delta_mins <  0) { OnError("delta_mins <  0, delta_mins = " + String(delta_mins)); }
+  if (delta_mins > 59) { OnError("delta_mins > 59, delta_mins = " + String(delta_mins)); }
+  #endif // NDEBUG
 }
 
 /// User can choose to set the seconds
@@ -300,6 +325,12 @@ void SetSeconds()
     }
     delay(100);
   }
+  #ifndef NDEBUG
+  if (s <  0) { OnError("s <  0, h = " + String(s)); }
+  if (s > 59) { OnError("s > 59, h = " + String(s)); }
+  if (delta_secs <  0) { OnError("delta_secs <  0, delta_secs = " + String(delta_secs)); }
+  if (delta_secs > 59) { OnError("delta_secs > 59, delta_secs = " + String(delta_secs)); }
+  #endif // NDEBUG
 }
 
 /// User can choose to set the time
@@ -370,30 +401,54 @@ void SetTime()
 ///Get the set clock time its seconds
 int GetSecs()
 {
- return (t.GetSecs() + delta_secs) % 60;
+  const int t_secs = t.GetSecs();
+  const int n_secs = (t_secs + delta_secs) % 60;
+  #ifndef NDEBUG
+  if (n_secs <  0) { OnError("n_secs <  0, n_secs = " + String(n_secs) + "(" + String(t_secs) + ", " + String(delta_secs) + ")" ); }
+  if (n_secs > 59) { OnError("n_secs > 59, n_secs = " + String(n_secs) + "(" + String(t_secs) + ", " + String(delta_secs) + ")" ); }
+  #endif // NDEBUG
+  return n_secs;
 }
 
 ///Get the set clock time its minutes
 int GetMins()
 {
- return (
+  const int carry = ((t.GetSecs() % 60) + delta_secs) / 60;
+  const int t_mins = t.GetMins();
+  const int n_mins 
+   = 
    (
-       ( (t.GetSecs() % 60) + delta_secs) / 60) //There might be a carry from the seconds
-     + t.GetMins() 
+       carry //There might be a carry from the seconds
+     + t_mins
      + delta_mins
+     + 60
    ) % 60;
+  #ifndef NDEBUG
+  if (n_mins <  0) { OnError("n_mins <  0, n_mins = " + String(n_mins) + "(" + String(t_mins) + ", " + String(delta_mins) + ", " + String(carry) + ")" ); }
+  if (n_mins > 59) { OnError("n_mins > 59, n_mins = " + String(n_mins) + "(" + String(t_mins) + ", " + String(delta_mins) + ", " + String(carry) + ")" ); }
+  #endif // NDEBUG
+  return n_mins;
 }
 
 ///Get the set clock time its hours
 int GetHours()
 {
- return 
-   (
-       (( (t.GetMins() % 60) + delta_mins) / 60) //There might be a carry from the minutes
-     + t.GetHours() 
-     + delta_hours
-     + 24
-   ) % 24;
+  const int carry //There might be a carry from the minutes
+    = (( (t.GetMins() % 60) + delta_mins) / 60);
+  const int t_hours = t.GetHours();
+  const int n_hours
+    =
+    (
+        carry 
+      + t_hours 
+      + delta_hours
+      + 24
+    ) % 24;
+  #ifndef NDEBUG
+  if (n_hours <  0) { OnError("n_hours <  0, n_mins = " + String(n_hours) + "(" + String(t_hours) + ", " + String(delta_hours) + ", " + String(carry) + ")" ); }
+  if (n_hours > 23) { OnError("n_hours > 23, n_mins = " + String(n_hours) + "(" + String(t_hours) + ", " + String(delta_hours) + ", " + String(carry) + ")" ); }
+  #endif // NDEBUG
+  return n_hours;
 }
 
 void loop() 
@@ -457,6 +512,15 @@ void loop()
 ///Show the time on all RGB LEDs
 void ShowTime(const int secs, const int mins, const int hours)
 {
+  #ifndef NDEBUG
+  if (hours <  0) { OnError("ShowTime: hours <  0, hours = " + String(hours)); }
+  if (hours > 23) { OnError("ShowTime: hours > 23, hours = " + String(hours)); }
+  if (mins <  0) { OnError("ShowTime: mins <  0, mins = " + String(mins)); }
+  if (mins > 59) { OnError("ShowTime: mins > 59, mins = " + String(mins)); }
+  if (secs <  0) { OnError("ShowTime: secs <  0, secs = " + String(secs)); }
+  if (secs > 59) { OnError("ShowTime: secs > 59, secs = " + String(secs)); }
+  #endif // NDEBUG
+  
   //The 16 hours pin is trivial
   digitalWrite(pin_16_hours,hours >= 16 ? HIGH : LOW);
   
@@ -482,9 +546,7 @@ void ShowTime(const int secs, const int mins, const int hours)
   }
   
   #ifndef NDEBUG
-  if (x < 0) Serial.println("ERROR");    
-  Serial.print("LCD states: ");
-  Serial.println(IntToBinary(x));
+  if (x < 0) { OnError("ShowTime: x < 0, x = " + String(x) + ", in binary: " +IntToBinary(x)); }
   #endif //NDEBUG
   ShowBinary(x % (256 * 256));
 }
@@ -492,7 +554,9 @@ void ShowTime(const int secs, const int mins, const int hours)
 ///Convert an integer value to a binary string
 String IntToBinary(const long x) //Must be long 
 {
-  if (x < 0) { Serial.println("IntToBinary error: x must be positive"); }    
+  #ifndef NDEBUG
+  if (x < 0) { OnError("IntToBinary: x must be positive, x = " + String(x)); }
+  #endif //NDEBUG
   String s;
   for (int i=0; i!=16; ++i)
   {
@@ -506,7 +570,9 @@ String IntToBinary(const long x) //Must be long
 ///Show a binanry value with the RGB LEDs 
 void ShowBinary(const long value) //Must be long
 {
-  if (value < 0) { Serial.println("ShowBinary error: value must be positive"); }
+  #ifndef NDEBUG
+  if (value < 0) { OnError("ShowBinary: value must be positive, value = " + String(value)); }
+  #endif //NDEBUG
   //Start of modification
   digitalWrite(latchpin,LOW);
 
@@ -515,12 +581,12 @@ void ShowBinary(const long value) //Must be long
   const long high_value = value / 256;
   const long low_value  = value % 256;
 
-  #ifndef NDEBUG
-  Serial.print("high_value: ");
-  Serial.print(IntToBinary(high_value));
-  Serial.print(", low_value: ");
-  Serial.println(IntToBinary(low_value));
-  #endif // NDEBUG
+  //#ifndef NDEBUG
+  //Serial.print("high_value: ");
+  //Serial.print(IntToBinary(high_value));
+  //Serial.print(", low_value: ");
+  //Serial.println(IntToBinary(low_value));
+  //#endif // NDEBUG
 
   //Write to shift registers
   //(note: would you only connect one shift register,
