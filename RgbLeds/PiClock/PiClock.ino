@@ -221,7 +221,6 @@ RGB LEDs:
 */
 
 #include <CapacitiveSensor.h>
-#include <LongTimer.h>
 
 //If NDEBUG is #defined, it is a release version
 //If NDEBUG is commented out, it is a debug version
@@ -259,9 +258,60 @@ void OnError(const String& error_message)
   }
 }
 
+class Time
+{
+  public:
+  Time(const int delta_secs, const int delta_mins, const int delta_hours)
+    : m_total_msecs(millis())
+  {
+    #ifndef NDEBUG
+    if (delta_secs <  0) { OnError("Time: delta_secs <  0, delta_secs = " + String(delta_secs)); }
+    if (delta_secs > 59) { OnError("Time: delta_secs > 59, delta_secs = " + String(delta_secs)); }
+    if (delta_mins <  0) { OnError("Time: delta_mins <  0, delta_mins = " + String(delta_mins)); }
+    if (delta_mins > 59) { OnError("Time: delta_mins > 59, delta_mins = " + String(delta_mins)); }
+    if (delta_hours <  0) { OnError("Time: delta_hours <  0, delta_hours = " + String(delta_hours)); }
+    if (delta_hours > 23) { OnError("Time: delta_hours > 23, delta_hours = " + String(delta_hours)); }
+    #endif // NDEBUG
+
+    m_total_secs = (m_total_msecs + delta_secs) / 1000;
+    m_secs = m_total_secs % 60;
+    m_total_mins = delta_mins + (m_total_secs / 60);
+    m_mins = m_total_mins % 60;
+    m_total_hours = delta_hours + (m_total_mins / 60);
+    m_hours = m_total_hours % 24;    
+
+    #ifndef NDEBUG
+    if (m_secs <  0) { OnError("Time: m_secs <  0, delta_secs = " + String(delta_secs)); }
+    if (m_secs > 59) { OnError("Time: m_secs > 59, delta_secs = " + String(delta_secs)); }
+    if (m_mins <  0) { OnError("Time: m_mins <  0, delta_mins = " + String(delta_mins)); }
+    if (m_mins > 59) { OnError("Time: m_mins > 59, delta_mins = " + String(delta_mins)); }
+    if (m_hours <  0) { OnError("Time: m_hours <  0, delta_hours = " + String(delta_hours)); }
+    if (m_hours > 23) { OnError("Time: m_hours > 23, delta_hours = " + String(delta_hours)); }
+    #endif // NDEBUG
+  }
+  int GetHours() const { return m_hours; }
+  int GetMins() const { return m_mins; }
+  int GetSecs() const { return m_secs; }
+  private:
+  int m_hours;
+  int m_mins;
+  int m_secs; 
+  const int m_total_msecs;
+  int m_total_secs;
+  int m_total_mins;
+  int m_total_hours;
+};
+
+Time GetTime();
+
 int delta_hours = 0;
 int delta_mins = 0;
 int delta_secs = 0;
+
+Time GetTime()
+{
+  return Time(delta_secs,delta_mins,delta_hours);
+}
 
 void setup() 
 {
@@ -275,7 +325,6 @@ void setup()
   #else //NDEBUG
   Serial.println("PiClock v. 1.0 (release version)");
   #endif //NDEBUG
-  Serial.println("LongTimer v. " + LongTimer::GetVersion());
   ShowBinary(0);
 }
 
@@ -310,14 +359,14 @@ int GetSensors()
 void SetHours()
 {
   Serial.println("Setting hours");
-  int h = GetHours();
+  int h = GetTime().GetHours();
   bool accept = false; //Accept editing the hours
   while (1)
   {
     const int sensor_state = GetSensors();
     if (sensor_state == state_left_sensor_pressed)
     {
-      delta_hours = ((h - t.GetHours()) + 24) % 24;
+      delta_hours = ((h - GetTime().GetHours()) + 24) % 24;
       break; 
     }
     if (sensor_state == state_right_sensor_pressed)
@@ -342,7 +391,7 @@ void SetHours()
 void SetMinutes()
 {
   Serial.println("Setting minutes");
-  int m = GetMins();
+  int m = GetTime().GetMins();
   bool accept = false; //Accept editing the minutes
   while (1)
   {
@@ -350,7 +399,7 @@ void SetMinutes()
     const int sensor_state = GetSensors();
     if (sensor_state == state_left_sensor_pressed)
     {
-      delta_mins = ((m - t.GetMins()) + 60) % 60;
+      delta_mins = ((m - GetTime().GetMins()) + 60) % 60;
       break; 
     }
     if (sensor_state == state_right_sensor_pressed)
@@ -374,7 +423,7 @@ void SetMinutes()
 void SetSeconds()
 {
   Serial.println("Setting seconds");
-  int s = GetSecs();
+  int s = GetTime().GetSecs();
   bool accept = false; //Accept editing the seconds
   while (1)
   {
@@ -382,7 +431,7 @@ void SetSeconds()
     const int sensor_state = GetSensors();
     if (sensor_state == state_left_sensor_pressed)
     {
-      delta_secs = ((s - t.GetSecs()) + 60) % 60;
+      delta_secs = ((s - GetTime().GetSecs()) + 60) % 60;
       break; 
     }
     if (sensor_state == state_right_sensor_pressed)
@@ -399,6 +448,7 @@ void SetSeconds()
   if (delta_secs > 59) { OnError("delta_secs > 59, delta_secs = " + String(delta_secs)); }
   #endif // NDEBUG
 }
+
 
 /// User can choose to set the time
 /// - left sensor: select hours, minutes, seconds, cancel
@@ -465,59 +515,6 @@ void SetTime()
   }  
 }
 
-///Get the set clock time its seconds
-int GetSecs()
-{
-  const int t_secs = t.GetSecs();
-  const int n_secs = (t_secs + delta_secs) % 60;
-  #ifndef NDEBUG
-  if (n_secs <  0) { OnError("n_secs <  0, n_secs = " + String(n_secs) + "(" + String(t_secs) + ", " + String(delta_secs) + ")" ); }
-  if (n_secs > 59) { OnError("n_secs > 59, n_secs = " + String(n_secs) + "(" + String(t_secs) + ", " + String(delta_secs) + ")" ); }
-  #endif // NDEBUG
-  return n_secs;
-}
-
-///Get the set clock time its minutes
-int GetMins()
-{
-  const int carry = ((t.GetSecs() % 60) + delta_secs) / 60;
-  const int t_mins = t.GetMins();
-  const int n_mins 
-   = 
-   (
-       carry //There might be a carry from the seconds
-     + t_mins
-     + delta_mins
-     + 60
-   ) % 60;
-  #ifndef NDEBUG
-  if (n_mins <  0) { OnError("n_mins <  0, n_mins = " + String(n_mins) + "(" + String(t_mins) + ", " + String(delta_mins) + ", " + String(carry) + ")" ); }
-  if (n_mins > 59) { OnError("n_mins > 59, n_mins = " + String(n_mins) + "(" + String(t_mins) + ", " + String(delta_mins) + ", " + String(carry) + ")" ); }
-  #endif // NDEBUG
-  return n_mins;
-}
-
-///Get the set clock time its hours
-int GetHours()
-{
-  const int carry //There might be a carry from the minutes
-    = (( (t.GetMins() % 60) + delta_mins) / 60);
-  const int t_hours = t.GetHours();
-  const int n_hours
-    =
-    (
-        carry 
-      + t_hours 
-      + delta_hours
-      + 24
-    ) % 24;
-  #ifndef NDEBUG
-  if (n_hours <  0) { OnError("n_hours <  0, n_mins = " + String(n_hours) + "(" + String(t_hours) + ", " + String(delta_hours) + ", " + String(carry) + ")" ); }
-  if (n_hours > 23) { OnError("n_hours > 23, n_mins = " + String(n_hours) + "(" + String(t_hours) + ", " + String(delta_hours) + ", " + String(carry) + ")" ); }
-  #endif // NDEBUG
-  return n_hours;
-}
-
 void loop() 
 {
   // Is it Pi o'clock yet? That is, 3:14 PM, also known as 15:14
@@ -531,9 +528,11 @@ void loop()
     if (sensors_state == state_left_sensor_pressed) { SetTime(); delay(100); }
 
     //Show the time
-    const int h = GetHours();
-    const int m = GetMins();
-    const int s = GetSecs(); 
+    const Time t = GetTime();
+    const int s = t.GetSecs();
+    const int m = t.GetMins();
+    const int h = t.GetHours();
+
 
     if (last_sec == s) 
     {
@@ -546,13 +545,10 @@ void loop()
     //if (sensors_state == state_right_sensor_pressed) 
     { 
       //Send debug message to console window
-      const String longtime_now = String(t.GetHours()) + ":" + String(t.GetMins()) + ":" + String(t.GetSecs());
       const String deltas = String(delta_hours) + ":" + String(delta_mins) + ":" + String(delta_secs);
       const String time_now = String(h) + ":" + String(m) + ":" + String(s);
-      Serial.print(longtime_now);
-      Serial.print(" + ");
       Serial.print(deltas);
-      Serial.print(" = ");
+      Serial.print(" -> ");
       Serial.println(time_now);
     }
 
