@@ -218,6 +218,11 @@ RGB LEDs:
 3: Red, connect with resistance of 1000 (brown-black-red-gold) to Arduino pin
 4: Green, connect with resistance of 2200 (red-red-red-gold) to Arduino pin
 
+
+Uploading
+
+When uploading, disconnect the reset pin, otherwise you get async() errors
+
 */
 
 #include <CapacitiveSensor.h>
