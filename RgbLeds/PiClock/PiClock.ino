@@ -224,7 +224,7 @@ RGB LEDs:
 
 //If NDEBUG is #defined, it is a release version
 //If NDEBUG is commented out, it is a debug version
-#define NDEBUG
+//#define NDEBUG
 
 const int datapin  = 2;
 const int latchpin = 3;
@@ -261,10 +261,11 @@ void OnError(const String& error_message)
 class Time
 {
   public:
-  Time(const int delta_secs, const int delta_mins, const int delta_hours)
-    : m_total_msecs(millis())
+  Time(const int delta_secs, const int delta_mins, const int delta_hours, const long my_millis = -1)
+    : m_total_msecs(my_millis == -1 ? millis() : my_millis)
   {
     #ifndef NDEBUG
+    if (m_total_msecs < 0) { OnError("Time: m_total_msecs < 0, m_total_msecs = " + String(m_total_msecs)); }
     if (delta_secs <  0) { OnError("Time: delta_secs <  0, delta_secs = " + String(delta_secs)); }
     if (delta_secs > 59) { OnError("Time: delta_secs > 59, delta_secs = " + String(delta_secs)); }
     if (delta_mins <  0) { OnError("Time: delta_mins <  0, delta_mins = " + String(delta_mins)); }
@@ -273,7 +274,7 @@ class Time
     if (delta_hours > 23) { OnError("Time: delta_hours > 23, delta_hours = " + String(delta_hours)); }
     #endif // NDEBUG
 
-    m_total_secs = (m_total_msecs + delta_secs) / 1000;
+    m_total_secs = delta_secs + (m_total_msecs / 1000);
     m_secs = m_total_secs % 60;
     m_total_mins = delta_mins + (m_total_secs / 60);
     m_mins = m_total_mins % 60;
@@ -281,6 +282,11 @@ class Time
     m_hours = m_total_hours % 24;    
 
     #ifndef NDEBUG
+    if (m_total_secs  < 0) { OnError("Time: m_total_secs < 0, m_total_secs = "   + String(m_total_secs )); }
+    if (m_total_mins  < 0) { OnError("Time: m_total_mins < 0, m_total_mins = "   + String(m_total_mins )); }
+    if (m_total_hours < 0) { OnError("Time: m_total_hours < 0, m_total_hours = " + String(m_total_hours)); }
+
+    if (m_secs > 59) { OnError("Time: m_secs > 59, delta_secs = " + String(delta_secs)); }
     if (m_secs <  0) { OnError("Time: m_secs <  0, delta_secs = " + String(delta_secs)); }
     if (m_secs > 59) { OnError("Time: m_secs > 59, delta_secs = " + String(delta_secs)); }
     if (m_mins <  0) { OnError("Time: m_mins <  0, delta_mins = " + String(delta_mins)); }
@@ -296,8 +302,8 @@ class Time
   int m_hours;
   int m_mins;
   int m_secs; 
-  const int m_total_msecs;
-  int m_total_secs;
+  const long m_total_msecs; //Must be long
+  long m_total_secs; //Must be long, a day has more than 65536 secs
   int m_total_mins;
   int m_total_hours;
 };
@@ -313,8 +319,26 @@ Time GetTime()
   return Time(delta_secs,delta_mins,delta_hours);
 }
 
+void TestTime()
+{
+  Time(0,0,0);
+  Time(0,0,0,0);
+  if (Time(0,0,0,1000).GetSecs() != 1) { OnError("TestTime #1"); }
+  if (Time(0,0,0, 60000).GetMins() != 1) { OnError("TestTime #2"); }
+  if (Time(0,0,0,3600000).GetHours() != 1) { OnError("TestTime #3"); }
+  if (Time(59,0,0,1000).GetSecs() != 0) { OnError("TestTime #4"); }
+  if (Time(59,0,0,1000).GetMins() != 1) { OnError("TestTime #5"); }
+  if (Time(0,59,0,60000).GetMins() != 0) { OnError("TestTime #6"); }
+  if (Time(0,59,0,60000).GetHours() != 1) { OnError("TestTime #7"); }
+  if (Time(0,0,22,3600000).GetHours() != 23) { OnError("TestTime #8"); }
+  if (Time(0,0,23,3600000).GetHours() !=  0) { OnError("TestTime #9"); }
+}
+
 void setup() 
 {
+  digitalWrite(resetpin,HIGH);  //This line is first, so when the Arduino is reset it doesn't reset again untill it's told to
+  pinMode(resetpin,OUTPUT);     //Very important, without this line resetting won't work
+
   pinMode(latchpin,OUTPUT);
   pinMode(clockpin,OUTPUT);
   pinMode(datapin ,OUTPUT);
@@ -325,6 +349,7 @@ void setup()
   #else //NDEBUG
   Serial.println("PiClock v. 1.0 (release version)");
   #endif //NDEBUG
+  TestTime();
   ShowBinary(0);
 }
 
@@ -348,7 +373,7 @@ int GetSensors()
   //The threshold value, which determines the sensitivity of the sensors
   // - too low: the program will think more often there is a touch, possibly even when you do not touch
   // - too high: the program will think less often there is a touch, possibly even when you do touch 
-  const int threshold = 100;
+  const int threshold = 200;
   const int state =  (r1 >= threshold ? 2 : 0) + (r2 >= threshold ? 1 : 0);
   return state;
 }
@@ -460,7 +485,7 @@ void SetTime()
   while (1)
   {
     //Blink hours
-    ShowTime(0,0,31);
+    ShowNonsenseTime(0,0,31);
     delay(100);
     ShowTime(0,0,0);
     delay(100);
@@ -479,7 +504,7 @@ void SetTime()
   while (1)
   {
     //Blink minutes
-    ShowTime(0,63,0);
+    ShowNonsenseTime(0,63,0);
     delay(100);
     ShowTime(0,0,0);
     delay(100);
@@ -498,7 +523,7 @@ void SetTime()
   while (1)
   {
     //Blink second
-    ShowTime(63,0,0);
+    ShowNonsenseTime(63,0,0);
     delay(100);
     ShowTime(0,0,0);
     delay(100);
@@ -545,11 +570,18 @@ void loop()
     //if (sensors_state == state_right_sensor_pressed) 
     { 
       //Send debug message to console window
+      const Time t = GetTime();
       const String deltas = String(delta_hours) + ":" + String(delta_mins) + ":" + String(delta_secs);
       const String time_now = String(h) + ":" + String(m) + ":" + String(s);
       Serial.print(deltas);
       Serial.print(" -> ");
       Serial.println(time_now);
+    }
+
+    //Reset just before midnight
+    if (h == 23 && m == 59 && s == 58) 
+    {
+      digitalWrite(resetpin,LOW);
     }
 
 
@@ -583,6 +615,12 @@ void ShowTime(const int secs, const int mins, const int hours)
   if (secs <  0) { OnError("ShowTime: secs <  0, secs = " + String(secs)); }
   if (secs > 59) { OnError("ShowTime: secs > 59, secs = " + String(secs)); }
   #endif // NDEBUG
+  ShowNonsenseTime(secs,mins,hours);  
+}
+
+///Also allows to display nonsense time, like 31:63:63, which is used in setting the time
+void ShowNonsenseTime(const int secs, const int mins, const int hours)
+{
   
   //The 16 hours pin is trivial
   digitalWrite(pin_16_hours,hours >= 16 ? HIGH : LOW);
@@ -630,7 +668,7 @@ String IntToBinary(const long x) //Must be long
 }
 
 
-///Show a binanry value with the RGB LEDs 
+///Show a binary value with the RGB LEDs 
 void ShowBinary(const long value) //Must be long
 {
   #ifndef NDEBUG
