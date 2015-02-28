@@ -53,6 +53,12 @@ SN74HC595 pin names:
 
 First shift register SN74HC595 connections:
 
+        D2
+        |
+        |   +-----+
+        +---+  R  +---GND
+        |   +-----+
+        |
   16 15 14 13 12 11 10 9
   |  |  |  |  |  |  |  |
   +--+--+--+--+--+--+--+
@@ -60,6 +66,7 @@ First shift register SN74HC595 connections:
   +--+--+--+--+--+--+--+
   |  |  |  |  |  |  |  |
   1  2  3  4  5  6  7  8
+     
 
    1: RGB LED 2, red, displays 2 seconds
    2: RGB LED 3, red, displays 4 seconds
@@ -74,9 +81,11 @@ First shift register SN74HC595 connections:
   11: to D4: clock pin
   12: to D3: latch pin
   13: to GND
-  14: to D2: data pin
+  14: to D2: data pin, and to pull-down resistance R
   15: RGB LED 1, red, displays 1 seconds
   16: to 5V
+  R: pull down resistance, 10 kOhm (brown-black-orange-gold)
+  GND: Arduino GND pin
 
 Second shift register SN74HC595 connections:
 
@@ -106,33 +115,90 @@ Second shift register SN74HC595 connections:
   15: RGB LED 6, green, displays 4 minutes
   16: to 5V
 
+Piezo:
+  
+    6              GND
+    |  +--------+  |
+    +--+   P    +--+
+       +--------+
+
+  6: piezo pin
+  P: Piezo
+  GND: Arduino GND pin
+
+Reset:
+  
+    7              5V 
+    |  +--------+  |
+    +--+   R    +--+
+    |  +--------+
+    |
+   RST
+
+  7: reset pin
+  RST: Arduino RST pin
+  R: pull-up resistance, 10 kOhm (brown-black-orange-gold)
+  5V: Arduino 5V pin
+  
 Left capacitive sensor:
   
-  8              9 
-  |  +--------+  |
-  +--+ R      +--+
-  |  +--------+
-  |
-  X
-
+    8              9 
+    |  +--------+  |
+    +--+   RH   +--+
+    |  +--------+
+    |
+  +-+-+
+  |   |
+  |   |
+  |RS |
+  |   |
+  +-+-+
+    |
+    |
+    X
+  
   8: sensor pin
   9: helper pin
-  R: resistance of at least 1 Mega-Ohm (brown-black-green-gold)
+  RH: 'resistance helper', resistance of at least 1 Mega-Ohm (brown-black-green-gold)
+  RS: 'resistance sensor', resistance of 1 kOhm (brown-black-red-gold)
   X: place to touch wire
 
 Right capacitive sensor:
   
-  10             11 
+    10             11 
+    |  +--------+  |
+    +--+   RH   +--+
+    |  +--------+
+    |
+  +-+-+
+  |   |
+  |   |
+  |RS |
+  |   |
+  +-+-+
+    |
+    |
+    X
+  
+  10: sensor pin
+  11: helper pin
+  RH: 'resistance helper', resistance of at least 1 Mega-Ohm (brown-black-green-gold)
+  RS: 'resistance sensor', resistance of 1 kOhm (brown-black-red-gold)
+  X: place to touch wire
+
+Reset pin:
+  
+  7              5V
   |  +--------+  |
   +--+ R      +--+
   |  +--------+
   |
-  X
+  RST
   
-  10: sensor pin
-  11: helper pin
-  R: resistance of at least 1 Mega-Ohm (brown-black-green-gold)
-  X: place to touch wire
+  7: reset pin
+  5V: Arduino 5V pin
+  R: resistance of 10 kOhm (brown-black-orange-gold)
+  RST: Arduino RST pin
 
 
 RGB LEDs:
@@ -168,6 +234,8 @@ const int pin_16_hours = 5; //The pin connected to the LED to show 16 hours
 
 const int pin_piezo = 6; //The pin connected to the piezo
 
+const int resetpin = 7; //The pin connected to RST, RST connected to 10 kOhm resistance connected to 5V
+
 const int pin_sensor1 =  8;
 const int pin_helper1 =  9;
 CapacitiveSensor sensor1 
@@ -180,18 +248,17 @@ CapacitiveSensor sensor2
 
 void OnError(const String& error_message)
 {
+  Serial.print("ERROR: ");  
+  Serial.println(error_message);  
   while (1)
   {
     //Blink LED
     digitalWrite(pin_16_hours,!digitalRead(pin_16_hours));
     //Write to serial
-    Serial.print("ERROR: ");  
-    Serial.println(error_message);  
     delay(1000);
   }
 }
 
-LongTimer t;
 int delta_hours = 0;
 int delta_mins = 0;
 int delta_secs = 0;
