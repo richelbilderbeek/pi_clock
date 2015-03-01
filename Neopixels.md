@@ -13,7 +13,7 @@ This [PiClock](README.md) uses NeoPixels to display the time.
 
 ## How to read the time
 
-See [PiClock](README.md).
+See [How to read the time](HowToReadTheTime.md).
 
 ## Backside
 
