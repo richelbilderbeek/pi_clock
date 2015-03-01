@@ -1,12 +1,4 @@
-# PiClock
-
-Arduino project for a clock that displays the time in binary and beeps at pi o'clock PM
-
-There are two PiClocks:
- * [PiClock using NeoPixels](NeoPixels/README.md)
- * [PiClock using RGB LEDs](RgbLeds/README.md)
-
-## How to read the time
+# How to read the time
 
 Determine which LED goes on an off every second. This is LED with index 0. Then the LEDs are ordered clockwise. LEDs 4 and 8 change state every 1 in 5 seconds, to indicate their position.
 
