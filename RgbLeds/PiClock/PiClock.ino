@@ -3,6 +3,8 @@
   Pi Clock with RGB LEDs
   (C) 2015 Richel Bilderbeek
 
+2015-02-28: v.1.0: Initial version
+2015-03-01: v.1.1: Bugfix: setting the time multiple times works also after the first time
 
 Clock layout:
 
@@ -396,7 +398,8 @@ void SetHours()
     const int sensor_state = GetSensors();
     if (sensor_state == state_left_sensor_pressed)
     {
-      delta_hours = ((h - GetTime().GetHours()) + 24) % 24;
+      const int pre_delta_hour = GetTime().GetHours() - delta_hours;
+      delta_hours = ((h - pre_delta_hour) + 24) % 24;
       break; 
     }
     if (sensor_state == state_right_sensor_pressed)
@@ -429,7 +432,8 @@ void SetMinutes()
     const int sensor_state = GetSensors();
     if (sensor_state == state_left_sensor_pressed)
     {
-      delta_mins = ((m - GetTime().GetMins()) + 60) % 60;
+      const int pre_delta_mins = GetTime().GetMins() - delta_mins;
+      delta_mins = ((m - pre_delta_mins) + 60) % 60;
       break; 
     }
     if (sensor_state == state_right_sensor_pressed)
@@ -461,7 +465,8 @@ void SetSeconds()
     const int sensor_state = GetSensors();
     if (sensor_state == state_left_sensor_pressed)
     {
-      delta_secs = ((s - GetTime().GetSecs()) + 60) % 60;
+      const int pre_delta_secs = GetTime().GetSecs() - delta_secs;
+      delta_secs = ((s - pre_delta_secs) + 60) % 60;
       break; 
     }
     if (sensor_state == state_right_sensor_pressed)
