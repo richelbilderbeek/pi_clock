@@ -10,5 +10,6 @@ See [How to read the time](HowToReadTheTime.md).
 
 ## Prototype
 
-![Pi Clock Prototype 1](RgbLeds/PiClockRgbLedsPrototype.jpg)
+![Pi Clock Prototype 1](RgbLeds/PiClockRgbLedsPrototypeSide.jpg)
+![Pi Clock Prototype 1](RgbLeds/PiClockRgbLedsPrototypeFront.jpg)
 ![Pi Clock Prototype 2](RgbLeds/PiClockRgbLedsPrototypeCloseUp.jpg)
