@@ -6,7 +6,7 @@ There are two PiClocks:
  * [PiClock using NeoPixels](NeoPixels.md)
  * [PiClock using RGB LEDs](RgbLeds.md)
 
-![Pi Clock NeoPixels](NeoPixels/PiClockFront3.jpg.jpg)
+![Pi Clock NeoPixels](NeoPixels/PiClockFront3.jpg)
 ![Pi Clock RGB LEDs prototype](RgbLeds/PiClockRgbLedsPrototypeSide.jpg)
 
 
