@@ -5,6 +5,7 @@
 
 2015-02-28: v.1.0: Initial version
 2015-03-01: v.1.1: Bugfix: setting the time multiple times works also after the first time
+2015-03-12: v.1.2: Can also set time from Serial Monitor
 
 Clock layout:
 
@@ -352,9 +353,9 @@ void setup()
   pinMode(pin_16_hours , OUTPUT);
   Serial.begin(9600); //Cannot be used: chip is used stand-alone
   #ifndef NDEBUG
-  Serial.println("PiClock v. 1.0 (debug version)");
+  Serial.println("PiClock v. 1.2 (debug version)");
   #else //NDEBUG
-  Serial.println("PiClock v. 1.0 (release version)");
+  Serial.println("PiClock v. 1.2 (release version)");
   #endif //NDEBUG
   TestTime();
   ShowBinary(0);
@@ -550,6 +551,103 @@ void SetTime()
   }  
 }
 
+void SetTimeFromSerial()
+{
+  //Serial.println("Start of SetTimeFromSerial");
+  const int  h  = Serial.available() ? Serial.parseInt() : -1;
+  delay(10);
+  const char c1 = Serial.available() ? Serial.read() : '0';
+  delay(10);
+  const int  m  = Serial.available() ? Serial.parseInt() : -1;
+  delay(10);
+  const char c2 = Serial.available() ? Serial.read() : '0';
+  delay(10);
+  const int  s  = Serial.available() ? Serial.parseInt() : -1;
+  delay(10);
+  const String used = String(h) + String(c1) + String(m) + String(c2) + String(s);
+  if (h == -1) 
+  {
+    Serial.println(String("No hours, use e.g. '12:34:56' (used '") + used + String("')"));
+    return;
+  }
+  if (c1 == '0') 
+  {
+    Serial.println("No first seperator, use e.g. '12:34:56' (used '" + used + "')");
+    return;
+  }
+  if (m == -1) 
+  {
+    Serial.println("No minutes, use e.g. '12:34:56' (used '" + used + "')");
+    return;
+  }
+  if (c2 == '0') 
+  {
+    Serial.println("No second seperator, use e.g. '12:34:56'");
+    return;
+  }
+  if (s == -1) 
+  {
+    Serial.println("No seconds, use e.g. '12:34:56'");
+    return;
+  }
+  if (h < 0 || h > 23)
+  {
+    Serial.println("Hours must be in range [0,23]");
+    return;
+  }
+  if (m < 0 || h > 59)
+  {
+    Serial.println("Minutes must be in range [0,59]");
+    return;
+  }
+  if (s < 0 || s > 59)
+  {
+    Serial.println("Seconds must be in range [0,59]");
+    return;
+  }
+  const int pre_delta_hour = GetTime().GetHours() - delta_hours;
+  delta_hours = ((h - pre_delta_hour) + 24) % 24;
+
+  const int pre_delta_mins = GetTime().GetMins() - delta_mins;
+  delta_mins = ((m - pre_delta_mins) + 60) % 60;
+
+  const int pre_delta_secs = GetTime().GetSecs() - delta_secs;
+  delta_secs = ((s - pre_delta_secs) + 60) % 60;
+  /*
+  #ifndef NDEBUG
+  const String time_indended = String(h) + String(":") + String(m) + String(":") + String(s);
+  const String time_realized 
+    = String(GetTime().GetHours()) 
+    + String(":") 
+    + String(GetTime().GetMins()) 
+    + String(":") 
+    + String(GetTime().GetSecs()
+  );
+  const String debug_msg 
+    = String("time_indended (") 
+    + time_indended 
+    + String("), time_realized (") 
+    + time_realized 
+    + String(") ")
+  ;
+  delay(100);
+  Serial.println(debug_msg);
+  delay(100);
+  if (time_indended != time_realized)
+  {
+    const String error_msg 
+      = String("time_indended (") 
+      + time_indended 
+      + String(")!= time_realized (") 
+      + time_realized 
+      + String(")")
+    ;
+    OnError(error_msg);
+  }
+  #endif
+  */
+}
+
 void loop() 
 {
   // Is it Pi o'clock yet? That is, 3:14 PM, also known as 15:14
@@ -562,6 +660,11 @@ void loop()
     const int sensors_state = GetSensors();
     if (sensors_state == state_left_sensor_pressed) { SetTime(); delay(100); }
 
+    if (Serial.available())
+    {
+      delay(100);
+      SetTimeFromSerial();  
+    }
     //Show the time
     const Time t = GetTime();
     const int s = t.GetSecs();
@@ -586,6 +689,7 @@ void loop()
       Serial.print(deltas);
       Serial.print(" -> ");
       Serial.println(time_now);
+      delay(100);
     }
 
     //Reset just before midnight
