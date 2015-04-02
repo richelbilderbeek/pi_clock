@@ -7,6 +7,7 @@
 2015-03-01: v.1.1: Bugfix: setting the time multiple times works also after the first time
 2015-03-12: v.1.2: Can also set time from Serial Monitor
 2015-03-22: v.1.3: Use of Time library
+2015-04-01: v.1.4: Removed reset pin, improved comments, support 4x AAA batteries as power source
 
 Clock layout:
 
@@ -130,37 +131,16 @@ Piezo:
   P: Piezo
   GND: Arduino GND pin
 
-Reset:
-  
-    7              5V 
-    |  +--------+  |
-    +--+   R    +--+
-    |  +--------+
-    |
-   RST
-
-  7: reset pin
-  RST: Arduino RST pin
-  R: pull-up resistance, 10 kOhm (brown-black-orange-gold)
-  5V: Arduino 5V pin
   
 Left capacitive sensor:
-  
-    8              9 
-    |  +--------+  |
-    +--+   RH   +--+
-    |  +--------+
-    |
-  +-+-+
-  |   |
-  |   |
-  |RS |
-  |   |
-  +-+-+
-    |
-    |
-    X
-  
+
+
+       +--------+     +--------+  
+   8 --+   RS   +--+--+   RH   |-- 9
+       +--------+  |  +--------+
+                   |
+                   X
+    
   8: sensor pin
   9: helper pin
   RH: 'resistance helper', resistance of at least 1 Mega-Ohm (brown-black-green-gold)
@@ -169,41 +149,17 @@ Left capacitive sensor:
 
 Right capacitive sensor:
   
-    10             11 
-    |  +--------+  |
-    +--+   RH   +--+
-    |  +--------+
-    |
-  +-+-+
-  |   |
-  |   |
-  |RS |
-  |   |
-  +-+-+
-    |
-    |
-    X
+       +--------+     +--------+  
+  10 --+   RS   +--+--+   RH   |-- 9
+       +--------+  |  +--------+
+                   |
+                   X
   
   10: sensor pin
-  11: helper pin
+  9: helper pin
   RH: 'resistance helper', resistance of at least 1 Mega-Ohm (brown-black-green-gold)
   RS: 'resistance sensor', resistance of 1 kOhm (brown-black-red-gold)
   X: place to touch wire
-
-Reset pin:
-  
-  7              5V
-  |  +--------+  |
-  +--+ R      +--+
-  |  +--------+
-  |
-  RST
-  
-  7: reset pin
-  5V: Arduino 5V pin
-  R: resistance of 10 kOhm (brown-black-orange-gold)
-  RST: Arduino RST pin
-
 
 RGB LEDs:
     ___
@@ -236,6 +192,10 @@ When uploading, disconnect the reset pin, otherwise you get async() errors
 //If NDEBUG is commented out, it is a debug version
 //#define NDEBUG
 
+//If you use an USB cable or adapter, set use_usb_for_power to true
+//If you use 4x AAA batteries, set use_usb_for_power to false
+const bool use_usb_for_power = false;
+
 const int datapin  = 2;
 const int latchpin = 3;
 const int clockpin = 4;
@@ -243,17 +203,24 @@ const int pin_16_hours = 5; //The pin connected to the LED to show 16 hours
 
 const int pin_piezo = 6; //The pin connected to the piezo
 
-const int resetpin = 7; //The pin connected to RST, RST connected to 10 kOhm resistance connected to 5V
-
 const int pin_sensor1 =  8;
 const int pin_helper1 =  9;
 CapacitiveSensor sensor1 
   = CapacitiveSensor(pin_helper1,pin_sensor1);        
 
 const int pin_sensor2 =  10;
-const int pin_helper2 =  11;
+const int pin_helper2 = pin_helper1;
 CapacitiveSensor sensor2 
   = CapacitiveSensor(pin_helper2,pin_sensor2);        
+
+//Threshold for capacitive sensor, which determines the sensitivity of the sensors
+// - too low: the program will think more often there is a touch, possibly even when you do not touch
+// - too high: the program will think less often there is a touch, possibly even when you do touch
+//Some guidelines I use:
+// - Using an adapter or USB: 200
+// - Using 4x 1.5 AAA battery: 50
+const int threshold_usb = 200;
+const int threshold_batteries = 50;
 
 void OnError(const String& error_message)
 {
@@ -286,9 +253,6 @@ void TestTime()
 
 void setup() 
 {
-  digitalWrite(resetpin,HIGH);  //This line is first, so when the Arduino is reset it doesn't reset again untill it's told to
-  pinMode(resetpin,OUTPUT);     //Very important, without this line resetting won't work
-
   pinMode(latchpin,OUTPUT);
   pinMode(clockpin,OUTPUT);
   pinMode(datapin ,OUTPUT);
@@ -322,8 +286,11 @@ int GetSensors()
   const int r2 = sensor2.capacitiveSensor(samples);
   //The threshold value, which determines the sensitivity of the sensors
   // - too low: the program will think more often there is a touch, possibly even when you do not touch
-  // - too high: the program will think less often there is a touch, possibly even when you do touch 
-  const int threshold = 200;
+  // - too high: the program will think less often there is a touch, possibly even when you do touch
+  //Some guidelines I use:
+  // - Using an adapter or USB: 200
+  // - Using 4x 1.5 AAA battery: 50
+  const int threshold = use_usb_for_power ? threshold_usb : threshold_batteries;
   const int state =  (r1 >= threshold ? 2 : 0) + (r2 >= threshold ? 1 : 0);
   return state;
 }
@@ -496,9 +463,10 @@ void SetTimeFromSerial()
   delay(10);
   const int  m  = Serial.available() ? Serial.parseInt() : -1;
   delay(10);
+  //If the user does not supply seconds, it is assumed he/she wants 0 seconds
   const char c2 = Serial.available() ? Serial.read() : '0';
   delay(10);
-  const int  s  = Serial.available() ? Serial.parseInt() : -1;
+  const int  s  = Serial.available() ? Serial.parseInt() : 0;
   delay(10);
   const String used = String(h) + String(c1) + String(m) + String(c2) + String(s);
   if (h == -1) 
@@ -516,16 +484,16 @@ void SetTimeFromSerial()
     Serial.println("No minutes, use e.g. '12:34:56' (used '" + used + "')");
     return;
   }
-  if (c2 == '0') 
-  {
-    Serial.println("No second seperator, use e.g. '12:34:56'");
-    return;
-  }
-  if (s == -1) 
-  {
-    Serial.println("No seconds, use e.g. '12:34:56'");
-    return;
-  }
+  //if (c2 == '0') 
+  //{
+  //  Serial.println("No second seperator, use e.g. '12:34:56'");
+  //  return;
+  //}
+  //if (s == -1) 
+  //{
+  //  Serial.println("No seconds, use e.g. '12:34:56'");
+  //  return;
+  //}
   if (h < 0 || h > 23)
   {
     Serial.println("Hours must be in range [0,23]");
@@ -584,13 +552,6 @@ void loop()
       Serial.println(time_now);
       delay(100);
     }
-
-    //Reset just before midnight
-    if (h == 23 && m == 59 && s == 58) 
-    {
-      digitalWrite(resetpin,LOW);
-    }
-
 
     //Detect pi o'clock
     if (h == 15 && m == 14) 
