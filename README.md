@@ -6,9 +6,11 @@ There are two PiClocks:
  * [PiClock using NeoPixels](NeoPixels.md)
  * [PiClock using RGB LEDs](RgbLeds.md)
 
-![Pi Clock NeoPixels](NeoPixels/PiClockFront3.jpg)
+![Both PiClocks](PiClocks.jpg) (Thanks to James Rosindell for the picture)
+ ![Pi Clock NeoPixels](NeoPixels/PiClockFront3.jpg)
 ![Pi Clock RGB LEDs prototype](RgbLeds/PiClockRgbLedsPrototypeSide.jpg)
 
 
 ## FAQ
- * [How to read the time](HowToReadTheTime.md)
+
+* [How to read the time](HowToReadTheTime.md)
