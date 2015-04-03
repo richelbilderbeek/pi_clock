@@ -1,6 +1,6 @@
 # How to read the time
 
-[PiClock](README.md) [FAQ](Faq.md).
+[PiClock](README.md) [FAQ](FAQ.md).
 
 Determine which LED goes on an off every second. This is LED with index 0. Then the LEDs are ordered clockwise. LEDs 4 and 8 change state every 1 in 5 seconds, to indicate their position.
 

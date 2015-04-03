@@ -6,7 +6,7 @@ There are two PiClocks:
  * [PiClock using NeoPixels](NeoPixels.md)
  * [PiClock using RGB LEDs](RgbLeds.md)
 
-You can also read the [FAQ](Faq.md).
+You can also read the [FAQ](FAQ.md).
 
 ## Both Pi Clocks
 
