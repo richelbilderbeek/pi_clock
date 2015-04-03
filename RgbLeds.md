@@ -13,4 +13,4 @@ See [How to read the time](HowToReadTheTime.md).
 ![Pi Clock Prototype side](RgbLeds/PiClockRgbLedsPrototypeSide.jpg)
 ![Pi Clock Prototype front](RgbLeds/PiClockRgbLedsPrototypeFront.jpg)
 ![Pi Clock Prototype close up](RgbLeds/PiClockRgbLedsPrototypeCloseUp.jpg)
-![Pi Clock Prototype and ApproxyClock prototypes](PiClockRgbLedsPrototypeAndApproxyClockPrototype.jpg)
+![Pi Clock Prototype and ApproxyClock prototypes](RgbLeds/PiClockRgbLedsPrototypeAndApproxyClockPrototype.jpg)
