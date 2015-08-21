@@ -25,7 +25,12 @@ Piezo:
 //#define NDEBUG
 
 const int pin_piezo = 4; //The pin connected to the piezo
-const int pin_error = 13; //The pin connected to the error LED
+
+//Connect this pin to ground at startup and a beep will follow
+const int pin_debug = A0; 
+
+//The pin connected to the error LED
+const int pin_error = 13; 
 
 void OnError(const String& error_message)
 {
@@ -59,14 +64,25 @@ void TestTime()
 void setup() 
 {
   pinMode(pin_piezo, OUTPUT);
+  pinMode(pin_debug, INPUT);
   pinMode(pin_error, OUTPUT);
   Serial.begin(9600); //Cannot be used: chip is used stand-alone
   #ifndef NDEBUG
-  Serial.println("PiClock v. 1.0 (debug version)");
+  Serial.println("PiClock v. 1.1 (debug version)");
   #else //NDEBUG
-  Serial.println("PiClock v. 1.0 (release version)");
+  Serial.println("PiClock v. 1.1 (release version)");
   #endif //NDEBUG
   TestTime();
+  
+  {
+    const int value_debug = analogRead(pin_debug);
+    Serial.print("Value debug: ");
+    Serial.println(value_debug);
+    if (value_debug <= 1) 
+    { 
+      tone(pin_piezo,3142,314);
+    }
+  }
 }
 
 void loop() 
