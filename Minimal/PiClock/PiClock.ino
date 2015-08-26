@@ -4,15 +4,16 @@
   (C) 2015 Richel Bilderbeek
 
 2015-07-05: v.1.0: Initial version
+2015-08-21: v.1.1: Added beep if A0 is connected to GND at startup
 
 Piezo:
   
-    6              GND
+    8              GND
     |  +--------+  |
     +--+   P    +--+
        +--------+
 
-  6: piezo pin
+  8: piezo pin
   P: Piezo
   GND: Arduino GND pin
 
@@ -24,7 +25,7 @@ Piezo:
 //If NDEBUG is commented out, it is a debug version
 //#define NDEBUG
 
-const int pin_piezo = 4; //The pin connected to the piezo
+const int pin_piezo = 8; //The pin connected to the piezo
 
 //Connect this pin to ground at startup and a beep will follow
 const int pin_debug = A0; 
