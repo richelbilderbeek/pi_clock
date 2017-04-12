@@ -1,0 +1,31 @@
+language: cpp
+compiler: gcc
+
+install:
+  # arduino
+  - sudo apt-get install arduino
+  # ino
+  - cd ..
+  - git clone git://github.com/amperka/ino.git
+  - cd ino
+  - sudo make install
+  - sudo easy_install `cat requirements.txt`
+  - cd ..
+  - cd PiClock
+
+script: 
+  # Initialize
+  - ino init
+  - rm -rf src
+  # Minimal
+  - cp -r Minimal/PiClock src
+  - ino build
+  - rm -rf src  
+  # NeoPixels
+  - cp -r NeoPixels/PiClock src
+  - ino build
+  - rm -rf src  
+  # RgbLeds
+  - cp -r RgbLeds/PiClock src
+  - ino build
+  - rm -rf src  
