@@ -5,10 +5,10 @@
 The PiClock is [one of my machines](https://github.com/richelbilderbeek/Machines) that uses Arduino.
 It is a clock that displays the time in binary and beeps at pi o'clock PM.
 
-There are two PiClocks:
+There are multiple PiClocks:
+
  * [PiClock using NeoPixels](NeoPixels.md)
  * [PiClock using RGB LEDs](RgbLeds.md)
- * [Minimal PiClock](MinimalPiClock.md)
 
 You can also read the [FAQ](FAQ.md).
 
@@ -27,7 +27,3 @@ Thanks to James Rosindell for the picture
 ![Pi Clock RGB LEDs prototype](RgbLeds/PiClockRgbLedsPrototypeSide.jpg)
 
 Still a prototype.
-
-## Minimal PiClock 
-
-![Minimal Pi Clock](Minimal/MinimalPiClock.jpg)
