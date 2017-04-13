@@ -12,6 +12,8 @@ install:
   - sudo easy_install `cat requirements.txt`
   - cd ..
   - cd PiClock
+  # Time library
+  - git clone https://github.com/PaulStoffregen/Time.git /usr/share/arduino/libraries/Time
 
 script: 
   # Initialize
