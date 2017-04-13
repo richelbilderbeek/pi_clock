@@ -1,6 +1,9 @@
 # PiClock
 
-Arduino project for a clock that displays the time in binary and beeps at pi o'clock PM.
+[![Build Status](https://travis-ci.org/richelbilderbeek/PiClock.svg?branch=master)](https://travis-ci.org/richelbilderbeek/PiClock)
+
+The PiClock is [one of my machines](https://github.com/richelbilderbeek/Machines) that uses Arduino.
+It is a clock that displays the time in binary and beeps at pi o'clock PM.
 
 There are two PiClocks:
  * [PiClock using NeoPixels](NeoPixels.md)

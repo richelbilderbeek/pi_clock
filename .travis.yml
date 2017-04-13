@@ -13,7 +13,7 @@ install:
   - cd ..
   - cd PiClock
   # Time library
-  - git clone https://github.com/PaulStoffregen/Time.git /usr/share/arduino/libraries/Time
+  - sudo git clone https://github.com/PaulStoffregen/Time.git /usr/share/arduino/libraries/Time
 
 script: 
   # Initialize
